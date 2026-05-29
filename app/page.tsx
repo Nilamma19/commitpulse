@@ -70,7 +70,7 @@ export default function LandingPage() {
   const [username, setUsername] = useState('');
   const [copied, setCopied] = useState(false);
   const [svgContent, setSvgContent] = useState<string | null>(null);
-  const [svgState, setSvgState] = useState<'idle' | 'loading' | 'loaded'>('idle');
+  const [svgState, setSvgState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const guideRef = useRef<HTMLDivElement>(null);
   const { searches, addSearch, clearSearches, removeSearch } = useRecentSearches();
   const trimmedUsername = username.trim();
@@ -109,7 +109,7 @@ export default function LandingPage() {
       })
       .catch((err) => {
         if (err.name === 'AbortError') return;
-        setSvgState('loaded'); // show nothing rather than hang on loading
+        setSvgState('error');
       });
 
     return () => controller.abort();
@@ -324,6 +324,16 @@ export default function LandingPage() {
                 <div className="w-full flex items-center justify-center">
                   {svgState === 'loading' && (
                     <div className="h-[200px] w-full max-w-[600px] rounded-xl bg-white/5 animate-pulse" />
+                  )}
+                  {svgState === 'error' && (
+                    <div className="flex flex-col items-center justify-center gap-2 text-center py-8">
+                      <p className="text-sm font-semibold text-red-500 dark:text-red-400">
+                        Failed to load badge
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-white/40">
+                        The API may be unavailable. Please try again.
+                      </p>
+                    </div>
                   )}
                   {svgState === 'loaded' && svgContent && (
                     <div
