@@ -73,7 +73,6 @@ const Icons = {
 export default function LandingPage() {
   const [username, setUsername] = useState('');
   const [copied, setCopied] = useState(false);
-  const [svgContent, setSvgContent] = useState<string | null>(null);
   const [svgState, setSvgState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const guideRef = useRef<HTMLDivElement>(null);
@@ -93,27 +92,21 @@ export default function LandingPage() {
   const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://commitpulse.vercel.app';
   const markdown = `![CommitPulse](${siteUrl}/api/streak?user=${trimmedUsername})`;
 
-  // Fetch SVG content whenever debounced username changes.
+  // Probe badge URL for errors; actual rendering uses a native <img> tag.
   useEffect(() => {
     if (!hasUsername) {
       // eslint-disable-next-line react-hooks/set-state-in-effect
-      setSvgContent(null);
-
       setSvgState('idle');
       return;
     }
 
     setSvgState('loading');
 
-    setSvgContent(null);
-
     const controller = new AbortController();
 
     fetch(badgeUrl, { signal: controller.signal })
       .then(async (res) => {
-        const text = await res.text();
         if (!res.ok) {
-          setSvgContent(null);
           setSvgState('error');
           if (res.status === 404 || res.status === 400 || res.status === 429) {
             setErrorMessage('GitHub user not found');
@@ -122,11 +115,6 @@ export default function LandingPage() {
           }
           return;
         }
-        return text;
-      })
-      .then((text) => {
-        if (!text) return;
-        setSvgContent(text);
         setSvgState('loaded');
         setErrorMessage(null);
       })
@@ -181,7 +169,7 @@ export default function LandingPage() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.3 }}
-            className="mx-auto max-w-2xl text-sm sm:text-lg leading-relaxed text-gray-600 dark:text-gray-400 md:text-xl "
+            className="mx-auto max-w-2xl text-sm sm:text-lg leading-relaxed text-gray-600 dark:text-white/65 md:text-xl "
           >
             Stop settling for flat grids. Generate high-fidelity, 3D isometric monoliths that
             visualize your coding rhythm with professional precision.
@@ -211,7 +199,7 @@ export default function LandingPage() {
                   {username.length > 0 ? (
                     <button
                       onClick={() => setUsername('')}
-                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-black dark:text-[#A1A1AA] dark:hover:text-white"
+                      className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 transition-colors hover:text-black dark:text-white/65 dark:hover:text-white"
                       aria-label="Clear input"
                       type="button"
                     >
@@ -233,7 +221,7 @@ export default function LandingPage() {
                   className={`relative flex min-w-[160px] items-center justify-center gap-2 overflow-hidden rounded-2xl px-6 py-4 text-sm font-semibold transition-all duration-300 transform cursor-pointer hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] disabled:cursor-not-allowed ${
                     mounted && trimmedUsername.length > 0
                       ? 'bg-black text-white hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-gray-100 shadow-md'
-                      : 'bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-white/20'
+                      : 'bg-gray-100 text-gray-400 dark:bg-white/5 dark:text-white/55'
                   }`}
                 >
                   <AnimatePresence mode="wait">
@@ -275,7 +263,7 @@ export default function LandingPage() {
                   className={`relative flex min-w-[160px] items-center justify-center gap-2 overflow-hidden rounded-2xl border px-6 py-4 text-sm font-semibold transition-all duration-300 hover:scale-[1.02] hover:shadow-lg active:scale-[0.98] ${
                     mounted && trimmedUsername.length > 0
                       ? 'border-black/10 bg-white text-black hover:bg-gray-50 dark:border-white/10 dark:bg-white/5 dark:text-white dark:hover:bg-white/10 shadow-sm'
-                      : 'border-black/5 bg-gray-50 text-gray-400 dark:border-white/5 dark:bg-transparent dark:text-white/20'
+                      : 'border-black/5 bg-gray-50 text-gray-400 dark:border-white/5 dark:bg-transparent dark:text-white/55'
                   }`}
                 >
                   Watch Dashboard
@@ -320,7 +308,7 @@ export default function LandingPage() {
 
           <div className="group relative mt-10">
             <div className="absolute -inset-1 rounded-[2.5rem] bg-gradient-to-r from-emerald-500/20 to-cyan-500/20 opacity-50 blur-2xl transition duration-1000 group-hover:opacity-100" />
-            <InteractiveViewer className="relative flex min-h-[360px] items-center justify-center overflow-hidden rounded-3xl border border-black/5 bg-white/50 p-8 backdrop-blur-xl shadow-2xl dark:border-white/10 dark:bg-[#0a0a0a]/80">
+            <div className="relative flex min-h-[480px] md:min-h-[520px] items-center justify-center overflow-visible rounded-3xl border border-black/5 bg-white/50 p-8 backdrop-blur-xl shadow-2xl dark:border-white/10 dark:bg-[#0a0a0a]/80">
               {hasUsername ? (
                 <div className="w-full flex items-center justify-center">
                   {svgState === 'loading' && (
@@ -335,7 +323,7 @@ export default function LandingPage() {
                         <p className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
                           GitHub user not found
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        <p className="text-sm text-gray-500 dark:text-white/65 mt-1">
                           Please check the username and try again.
                         </p>
                       </div>
@@ -346,22 +334,26 @@ export default function LandingPage() {
                       <p className="text-sm font-semibold text-red-500 dark:text-red-400">
                         Failed to load badge
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-white/40">
+                      <p className="text-xs text-gray-500 dark:text-white/55">
                         The API may be unavailable. Please try again.
                       </p>
                     </div>
                   )}
-                  {svgState === 'loaded' && svgContent && (
+                  {svgState === 'loaded' && (
                     <motion.div
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       transition={{ duration: 0.5, ease: 'easeOut' }}
-                      className="cp-svg-container w-full max-w-[700px] drop-shadow-[0_30px_60px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_30px_60px_rgba(0,0,0,0.5)] [&>svg]:w-full [&>svg]:h-auto"
-                      dangerouslySetInnerHTML={{ __html: svgContent }}
-                    />
-                  )}
-                  {svgState === 'loaded' && !svgContent && errorMessage && (
-                    <p className="text-red-400 text-sm text-center">{errorMessage}</p>
+                      className="w-full max-w-[700px] drop-shadow-[0_30px_60px_rgba(0,0,0,0.15)] dark:drop-shadow-[0_30px_60px_rgba(0,0,0,0.5)]"
+                    >
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        data-testid="badge-img"
+                        src={badgeUrl}
+                        alt={`CommitPulse badge for ${debouncedUsername}`}
+                        className="w-full h-auto"
+                      />
+                    </motion.div>
                   )}
                 </div>
               ) : (
@@ -372,13 +364,13 @@ export default function LandingPage() {
                   <p className="text-xl font-bold tracking-tight text-gray-900 dark:text-white">
                     Ready to visualize your rhythm?
                   </p>
-                  <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-500 dark:text-gray-400">
+                  <p className="mt-3 max-w-md text-sm leading-relaxed text-gray-500 dark:text-white/65">
                     Enter a GitHub username above to instantly generate your 3D contribution
                     monolith preview.
                   </p>
                 </div>
               )}
-            </InteractiveViewer>
+            </div>
           </div>
         </section>
 
@@ -490,7 +482,7 @@ function SuccessGuide({
 
           <button
             onClick={onDismiss}
-            className="ml-4 mt-1 shrink-0 rounded-xl p-2 text-gray-500 transition-all hover:bg-gray-100 hover:text-black dark:text-white/30 dark:hover:bg-white/5 dark:hover:text-white"
+            className="ml-4 mt-1 shrink-0 rounded-xl p-2 text-gray-500 transition-all hover:bg-gray-100 hover:text-black dark:text-white/55 dark:hover:bg-white/5 dark:hover:text-white"
             aria-label="Dismiss guide"
           >
             <svg
@@ -533,7 +525,7 @@ function SuccessGuide({
         </div>
 
         <div className="px-8 py-6">
-          <p className="mb-3 text-xs font-bold uppercase tracking-[0.15em] text-gray-500 dark:text-white/30">
+          <p className="mb-3 text-xs font-bold uppercase tracking-[0.15em] text-gray-500 dark:text-white/55">
             Your copied snippet
           </p>
           <div className="flex items-center gap-3 rounded-xl border border-black/10 bg-gray-100 px-4 py-3 font-mono text-sm dark:border-white/8 dark:bg-black/60">
@@ -542,8 +534,8 @@ function SuccessGuide({
               {markdown}
             </code>
           </div>
-          <p className="mt-4 text-xs leading-relaxed text-gray-500 dark:text-white/25">
-            Tip: Add <code className="text-gray-700 dark:text-white/40">?accent=808080</code> to the
+          <p className="mt-4 text-xs leading-relaxed text-gray-500 dark:text-white/55">
+            Tip: Add <code className="text-gray-700 dark:text-white/55">?accent=808080</code> to the
             URL to change your monolith&apos;s colour palette.
           </p>
           <div className="mt-8 flex justify-center border-t border-black/10 pt-6 dark:border-white/5">
