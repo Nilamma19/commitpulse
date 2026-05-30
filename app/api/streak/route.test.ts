@@ -670,6 +670,17 @@ describe('GET /api/streak', () => {
       expect(response.headers.get('Cache-Control')).toBe('no-store');
     });
 
+    it('sets the SVG Content-Security-Policy header on generic error responses', async () => {
+      vi.mocked(fetchGitHubContributions).mockRejectedValue(new Error('Network failure'));
+
+      const response = await GET(makeRequest({ user: 'octocat' }));
+      const csp = response.headers.get('Content-Security-Policy');
+
+      expect(response.status).toBe(500);
+      expect(csp).toContain("default-src 'none'");
+      expect(csp).not.toContain('script-src');
+    });
+
     it('returns 429 with no-cache headers and rate limit SVG when rate limited', async () => {
       vi.mocked(fetchGitHubContributions).mockRejectedValue(new Error('API Rate Limit Exceeded'));
 

@@ -336,6 +336,7 @@ function buildErrorResponse(error: unknown, parseResult: ParseResult): NextRespo
     headers: {
       'Content-Type': 'image/svg+xml',
       'Cache-Control': 'no-store',
+      'Content-Security-Policy': SVG_CSP_HEADER,
     },
   });
 }
