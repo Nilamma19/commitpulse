@@ -20,7 +20,7 @@ const baseParams = {
 
 const deterministicContributionCount = (
   weekIndex: number,
-  dayIndex: number
+  dayIndex: number,
 ): number => {
   return ((weekIndex * 7 + dayIndex) * 13) % 20;
 };
