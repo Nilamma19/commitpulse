@@ -1,6 +1,7 @@
 'use client';
 import { motion } from 'framer-motion';
 import { useRef, useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import gsap from 'gsap';
 
 export function DiscordButton() {

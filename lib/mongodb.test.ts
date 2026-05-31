@@ -104,6 +104,7 @@ describe('dbConnect', () => {
   it('handles mongoose Connection State 0 (disconnected) gracefully', async () => {
     process.env.MONGODB_URI = 'mongodb://localhost:27017/test';
     global.mongoose.conn = null;
+
     vi.mocked(mongoose.connect).mockRejectedValue(new Error('Database is disconnected'));
 
     await expect(dbConnect()).rejects.toThrow('Database is disconnected');
@@ -135,5 +136,17 @@ describe('dbConnect', () => {
     expect(mongoose.connect).toHaveBeenCalledTimes(1);
     expect(global.mongoose.conn).toBe(mockMongoose);
     expect(conn).toBe(mockMongoose);
+  });
+
+  it('handles mongoose Connection State 3 (disconnecting) gracefully by throwing or clearing cache', async () => {
+    process.env.MONGODB_URI = 'mongodb://localhost:27017/test';
+    mockMongooseConnection.readyState = 3;
+
+    vi.mocked(mongoose.connect).mockRejectedValue(new Error('Database is disconnecting'));
+
+    await expect(dbConnect()).rejects.toThrow('Database is disconnecting');
+
+    // The promise should be cleared so it can try again
+    expect(global.mongoose.promise).toBeNull();
   });
 });
