@@ -739,6 +739,11 @@ describe('GET /api/streak', () => {
 
       expect(response.status).toBe(400);
     });
+    it('returns 400 when another invalid hex color is passed as accent (Variation 4)', async () => {
+      const response = await GET(makeRequest({ user: 'octocat', accent: '#ZZZZZZ' }));
+
+      expect(response.status).toBe(400);
+    });
   });
 
   describe('hide parameters', () => {
