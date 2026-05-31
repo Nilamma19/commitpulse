@@ -261,7 +261,8 @@ function buildErrorResponse(error: unknown, parseResult: ParseResult): NextRespo
     (parseResult.success &&
       (Array.isArray(parseResult.data.accent)
         ? parseResult.data.accent[parseResult.data.accent.length - 1]
-        : parseResult.data.accent)) || undefined;
+        : parseResult.data.accent)) ||
+    undefined;
   const errAccent = `#${sanitizeHexColor(errAccentRaw, '58a6ff')}`;
   const errText = `#${sanitizeHexColor(parseResult.success ? parseResult.data.text : undefined, 'c9d1d9')}`;
   const errRadius = parseResult.success
