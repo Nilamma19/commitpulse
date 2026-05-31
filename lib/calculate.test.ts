@@ -957,6 +957,16 @@ describe('calculateStreak — empty and sparse year edge cases', () => {
     expect(result.longestStreak).toBe(0);
     expect(result.totalContributions).toBe(0);
   });
+
+  it('verifies calculateStreak with a 365-day all-contribution calendar', () => {
+    const calendar = buildCalendar(Array(365).fill(1));
+
+    const result = calculateStreak(calendar);
+
+    expect(result.currentStreak).toBe(365);
+    expect(result.longestStreak).toBe(365);
+    expect(result.totalContributions).toBe(365);
+  });
 });
 
 describe('calculateStreak — todayDate format', () => {
