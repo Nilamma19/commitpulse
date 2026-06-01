@@ -2,7 +2,7 @@
 
 import { NextResponse } from 'next/server';
 import { fetchGitHubContributions, getOrgDashboardData } from '@/lib/github';
-import { calculateStreak, calculateMonthlyStats } from '@/lib/calculate';
+import { calculateStreak, calculateMonthlyStats, aggregateCalendars } from '@/lib/calculate';
 import {
   generateNotFoundSVG,
   generateRateLimitSVG,
@@ -13,9 +13,10 @@ import {
   generatePulseSVG,
 } from '@/lib/svg/generator';
 import { getSecondsUntilUTCMidnight, getSecondsUntilMidnightInTimezone } from '@/utils/time';
-import type { BadgeParams } from '@/types';
+import type { BadgeParams, ContributionCalendar } from '@/types';
 import { themes } from '@/lib/svg/themes';
 import { streakParamsSchema } from '@/lib/validations';
+import { sanitizeHexColor } from '@/lib/svg/sanitizer';
 
 const SVG_CSP_HEADER =
   "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://fonts.gstatic.com;";
@@ -90,13 +91,15 @@ export async function GET(request: Request) {
       versus,
       shading,
       gradient,
+      gradient_stops,
+      gradient_dir,
       opacity,
       tz: tzParam,
       disable_particles,
       glow,
       format,
     } = parseResult.data;
-
+    const normalizedView = view as 'default' | 'monthly' | 'heatmap' | 'pulse';
     const themeName = theme || 'dark';
     const from = customFrom
       ? new Date(customFrom).toISOString()
@@ -131,7 +134,15 @@ export async function GET(request: Request) {
     })();
 
     // If 'org' is provided, we use it as the display user
-    const targetEntity = org || user;
+    const targetEntity =
+      org ||
+      (user.includes(',')
+        ? user
+            .split(',')
+            .map((u) => u.trim())
+            .slice(0, 2)
+            .join(' + ')
+        : user);
     const borderParam = searchParams.get('border');
     const sanitizedBorder = borderParam ? borderParam.replace(/[^a-fA-F0-9]/g, '') : undefined;
     const animate = searchParams.get('animate') !== 'false';
@@ -150,7 +161,7 @@ export async function GET(request: Request) {
       hideBackground: hide_background,
       hide_stats,
       lang,
-      view,
+      view: normalizedView,
       delta_format,
       width,
       height,
@@ -164,6 +175,8 @@ export async function GET(request: Request) {
       versus,
       shading,
       gradient,
+      gradient_stops,
+      gradient_dir,
       opacity,
       disable_particles,
       glow,
@@ -181,6 +194,34 @@ export async function GET(request: Request) {
         to,
       });
       calendar = orgData.calendar;
+    } else if (user.includes(',')) {
+      const users = user
+        .split(',')
+        .map((u) => u.trim())
+        .filter(Boolean);
+      let lastError: unknown = null;
+      const fetchedCalendars = await Promise.all(
+        users.map(async (u) => {
+          try {
+            const userData = await fetchGitHubContributions(u, {
+              bypassCache: refresh,
+              from,
+              to,
+            });
+            return userData.calendar;
+          } catch (err) {
+            lastError = err;
+            return null;
+          }
+        })
+      );
+      const successfulCalendars = fetchedCalendars.filter(
+        (c): c is ContributionCalendar => c !== null
+      );
+      if (successfulCalendars.length === 0) {
+        throw lastError || new Error('No successful calendars fetched');
+      }
+      calendar = aggregateCalendars(successfulCalendars);
     } else {
       const userData = await fetchGitHubContributions(user, {
         bypassCache: refresh,
@@ -188,15 +229,16 @@ export async function GET(request: Request) {
         to,
       });
       calendar = userData.calendar;
+    }
 
-      if (versus) {
-        const versusData = await fetchGitHubContributions(versus, {
-          bypassCache: refresh,
-          from,
-          to,
-        });
-        versusCalendar = versusData.calendar;
-      }
+    // Fetch versus calendar independently — works with both user and org modes
+    if (versus) {
+      const versusData = await fetchGitHubContributions(versus, {
+        bypassCache: refresh,
+        from,
+        to,
+      });
+      versusCalendar = versusData.calendar;
     }
 
     // ─── JSON output mode ──────────────────────────────────────────────────
@@ -236,17 +278,17 @@ export async function GET(request: Request) {
 
     // ─── SVG output mode (default) ──────────────────────────────────────────
     let svg = '';
-    if (view === 'monthly') {
+    if (normalizedView === 'monthly') {
       const stats = calculateMonthlyStats(
         calendar,
         timezone,
         getMonthlyReferenceDate(year, timezone)
       );
       svg = generateMonthlySVG(stats, params);
-    } else if (view === 'heatmap') {
+    } else if (normalizedView === 'heatmap') {
       const stats = calculateStreak(calendar, timezone, undefined, grace);
       svg = generateHeatmapSVG(stats, params, calendar);
-    } else if (view === 'pulse') {
+    } else if (normalizedView === 'pulse') {
       // We still use calculateStreak here to efficiently parse totalContributions for the stat display,
       // even though the sparkline generator will extract its own daily 30-day timeline below.
       const stats = calculateStreak(calendar, timezone, undefined, grace);
@@ -299,15 +341,15 @@ function buildErrorResponse(error: unknown, parseResult: ParseResult): NextRespo
     message.toLowerCase().includes('validation') ||
     message.toLowerCase().includes('strictly for organizations');
 
-  const errBg = `#${(parseResult.success && parseResult.data.bg) || '0d1117'}`;
-  const errAccent = `#${
+  const errBg = `#${sanitizeHexColor(parseResult.success ? parseResult.data.bg : undefined, '0d1117')}`;
+  const errAccentRaw =
     (parseResult.success &&
       (Array.isArray(parseResult.data.accent)
         ? parseResult.data.accent[parseResult.data.accent.length - 1]
         : parseResult.data.accent)) ||
-    '58a6ff'
-  }`;
-  const errText = `#${(parseResult.success && parseResult.data.text) || 'c9d1d9'}`;
+    undefined;
+  const errAccent = `#${sanitizeHexColor(errAccentRaw, '58a6ff')}`;
+  const errText = `#${sanitizeHexColor(parseResult.success ? parseResult.data.text : undefined, 'c9d1d9')}`;
   const errRadius = parseResult.success
     ? (() => {
         const r = Number(parseResult.data.radius);
