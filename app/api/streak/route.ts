@@ -94,7 +94,7 @@ export async function GET(request: Request) {
       disable_particles,
       glow,
     } = parseResult.data;
-
+    const normalizedView = view as 'default' | 'monthly' | 'heatmap' | 'pulse';
     const themeName = theme || 'dark';
     const from = customFrom
       ? new Date(customFrom).toISOString()
@@ -146,7 +146,7 @@ export async function GET(request: Request) {
       hideBackground: hide_background,
       hide_stats,
       lang,
-      view,
+      view: normalizedView,
       delta_format,
       width,
       height,
@@ -195,17 +195,17 @@ export async function GET(request: Request) {
     }
 
     let svg = '';
-    if (view === 'monthly') {
+    if (normalizedView === 'monthly') {
       const stats = calculateMonthlyStats(
         calendar,
         timezone,
         getMonthlyReferenceDate(year, timezone)
       );
       svg = generateMonthlySVG(stats, params);
-    } else if (view === 'heatmap') {
+    } else if (normalizedView === 'heatmap') {
       const stats = calculateStreak(calendar, timezone, undefined, grace);
       svg = generateHeatmapSVG(stats, params, calendar);
-    } else if (view === 'pulse') {
+    } else if (normalizedView === 'pulse') {
       // We still use calculateStreak here to efficiently parse totalContributions for the stat display,
       // even though the sparkline generator will extract its own daily 30-day timeline below.
       const stats = calculateStreak(calendar, timezone, undefined, grace);

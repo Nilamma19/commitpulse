@@ -202,7 +202,7 @@ const baseStreakParamsSchema = z.object({
   lang: z.enum(supportedLanguages).catch('en').default('en'),
   tz: timeZoneParam,
   // Unknown view values fall back to the default dashboard view.
-  view: z.enum(['default', 'monthly']).catch('default').default('default'),
+  view: z.enum(['default', 'monthly', 'heatmap', 'pulse']).catch('default').default('default'),
   // Invalid delta formats fall back to percentage mode.
   delta_format: z.enum(['percent', 'absolute', 'both']).catch('percent').default('percent'),
   width: dimensionParam('width', 100, 1200),
