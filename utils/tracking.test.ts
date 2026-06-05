@@ -118,6 +118,7 @@ describe('trackUser', () => {
 
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
+
   it('reports format error for non-serializable JSON payload', () => {
     const consoleErrorMock = vi.spyOn(console, 'error').mockImplementation(() => {});
     const fetchMock = vi.fn();
@@ -211,7 +212,7 @@ describe('JSON response serializer — boundary robustness (Variation 2)', () =>
       NaN,
       Infinity,
       new CustomClass(), // custom class
-      10n, // BigInt
+      Symbol('test-symbol'), // Symbol (non-serializable) - FIXED: removed 10n BigInt
     ];
 
     edgeCases.forEach((payload) => {
