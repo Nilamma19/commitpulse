@@ -40,7 +40,7 @@ describe('CommitClock - Theme Contrast', () => {
     render(<CommitClock data={data} />);
 
     expect(screen.getByText('Commit Clock')).toBeInTheDocument();
-    expect(screen.getByText('Active Days')).toBeInTheDocument();
+    expect(screen.getByText('Weekly activity cycle')).toBeInTheDocument();
   });
 
   it('renders SVG style block containing dark mode variables', () => {

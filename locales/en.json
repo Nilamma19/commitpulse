@@ -15,11 +15,11 @@
     "contributors": "Contributors",
     "documentation": "Documentation",
     "creator": "Creator",
-    "copyright": "\u00a9 {{year}} CommitPulse. All rights reserved.",
+    "copyright": "© {{year}} CommitPulse. All rights reserved.",
     "navigation": "Navigation",
     "resources": "Resources",
     "connect": "Connect",
-    "made_with": "Made with \u2764\ufe0f for developers",
+    "made_with": "Made with ❤️ for developers",
     "home": "Home",
     "compare": "Compare",
     "customization": "Customization",
@@ -86,7 +86,7 @@
   "customize_cta": {
     "studio_badge": "Customization Studio",
     "title": "Want to fine-tune your monolith?",
-    "desc": "Dial in every pixel \u2014 swap accent colors, try a dark or neon theme, toggle logarithmic height scaling, and preview changes live before you paste a single line.",
+    "desc": "Dial in every pixel — swap accent colors, try a dark or neon theme, toggle logarithmic height scaling, and preview changes live before you paste a single line.",
     "btn": "Open Customization Studio"
   },
   "customize": {
@@ -131,7 +131,8 @@
       "copied": "Copied!",
       "copy_aria_disabled": "Add a GitHub username to enable copying the {{format}} export snippet",
       "copy_aria_enabled": "Copy {{format}} export snippet to clipboard",
-      "footer_tip": "Paste this into your GitHub profile's README.md. The badge renders server-side, no script required."
+      "footer_tip": "Paste this into your GitHub profile's README.md. The badge renders server-side, no script required.",
+      "tsx": "React TSX"
     }
   },
   "dashboard": {
@@ -174,7 +175,7 @@
     },
     "clock": {
       "title": "Commit Clock",
-      "active_days": "Active Days",
+      "active_days": "Weekly activity cycle",
       "tooltip_no_commits": "No commits recorded for this weekday",
       "tooltip_peak": "Peak weekday in this cycle",
       "tooltip_activity": "Weekly activity point"
@@ -235,7 +236,7 @@
       "downloaded": "Saved Asset!",
       "svg_downloaded": "SVG Downloaded!",
       "json_downloaded": "JSON Downloaded!",
-      "failed": "Failed \u2014 try again",
+      "failed": "Failed — try again",
       "social_channels": "Social Channels",
       "export_options": "Export Options",
       "github_wrapped": "GitHub Wrapped",

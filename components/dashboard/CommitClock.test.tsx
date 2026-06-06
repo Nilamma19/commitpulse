@@ -35,10 +35,10 @@ describe('CommitClock', () => {
     expect(screen.getByRole('heading', { name: /commit clock/i })).toBeDefined();
   });
 
-  it("renders 'Active Days' subtitle", () => {
+  it("renders 'Weekly activity cycle' subtitle", () => {
     render(<CommitClock data={generateMockData(5)} />);
 
-    expect(screen.getByText(/active days/i)).toBeDefined();
+    expect(screen.getByText(/weekly activity cycle/i)).toBeDefined();
   });
 
   it('renders all 7 day labels', () => {

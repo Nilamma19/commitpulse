@@ -12,13 +12,13 @@ import InteractiveViewer from '@/components/InteractiveViewer';
 import DOMPurify from 'dompurify';
 import type {
   ExportFormat,
+  Font,
   Scale,
   BadgeSize,
   ViewMode,
   DeltaFormat,
   Language,
   Timezone,
-  Font,
 } from './types';
 import { useDebounce } from '@/hooks/useDebounce';
 import { getExportSnippet, buildQueryParams } from './utils';
@@ -73,10 +73,10 @@ function CustomizePageInner(): ReactElement {
   const [exportFormat, setExportFormat] = useState<ExportFormat>('markdown');
   const [copied, setCopied] = useState(false);
   const [copyStatusMessage, setCopyStatusMessage] = useState('');
-  const [svgContent, setSvgContent] = useState('');
+  const copyResetTimeoutRef = useRef<number | null>(null);
+  const [svgContent, setSvgContent] = useState<string>('');
   const [svgState, setSvgState] = useState<'idle' | 'loading' | 'loaded' | 'error'>('idle');
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const copyResetTimeoutRef = useRef<number | null>(null);
   const trimmedUsername = username.trim();
   const hasUsername = trimmedUsername.length > 0;
   const isRandomTheme = theme === 'random';
@@ -230,40 +230,30 @@ function CustomizePageInner(): ReactElement {
       })
       .then((text) => {
         if (!text) return;
+
+        // Ensure we strictly sanitize the raw SVG markup using DOMPurify,
+        // while preserving the necessary layout and structural attributes our SVG requires.
         const sanitized = DOMPurify.sanitize(text, {
           USE_PROFILES: { svg: true },
-          ADD_TAGS: ['animate', 'style'],
           ADD_ATTR: [
-            'fill',
-            'fill-opacity',
-            'stroke',
-            'stroke-width',
-            'stroke-opacity',
-            'x1',
-            'y1',
-            'x2',
-            'y2',
-            'stop-color',
-            'stop-opacity',
-            'offset',
+            'viewBox',
+            'd',
+            'width',
+            'height',
+            'rx',
+            'ry',
             'transform-origin',
             'transform-box',
-            'transform',
-            'attributeName',
-            'from',
-            'to',
-            'dur',
-            'repeatCount',
-            'id',
-            'class',
-            'href',
+            'animation-delay',
+            'xmlns',
+            'font-family',
+            'font-size',
+            'font-weight',
+            'fill-opacity',
           ],
-          FORBID_TAGS: ['foreignObject', 'iframe', 'object', 'embed', 'script'],
-          FORBID_ATTR: ['xlink:href'],
-          ALLOWED_URI_REGEXP: /^(?:(?:https?|mailto|data):|#)/i,
         });
 
-        setSvgContent(sanitized as string);
+        setSvgContent(sanitized);
         setSvgState('loaded');
         setErrorMessage(null);
       })
@@ -279,6 +269,30 @@ function CustomizePageInner(): ReactElement {
 
   const exportSnippet = getExportSnippet(exportFormat, queryString);
 
+  const fallbackCopyToClipboard = (text: string): boolean => {
+    try {
+      const textElement = document.createElement('textarea');
+
+      textElement.value = text;
+      textElement.style.position = 'fixed';
+      textElement.style.opacity = '0';
+      textElement.style.pointerEvents = 'none';
+
+      document.body.appendChild(textElement);
+
+      textElement.focus();
+      textElement.select();
+
+      const successful = document.execCommand('copy');
+
+      document.body.removeChild(textElement);
+
+      return successful;
+    } catch {
+      return false;
+    }
+  };
+
   const announceCopyStatus = useCallback((message: string): void => {
     setCopyStatusMessage('');
     window.setTimeout(() => {
@@ -290,9 +304,35 @@ function CustomizePageInner(): ReactElement {
     if (!hasUsername) return;
 
     try {
-      await navigator.clipboard.writeText(exportSnippet);
+      if (navigator.clipboard && window.isSecureContext) {
+        await navigator.clipboard.writeText(exportSnippet);
+      } else {
+        const copiedSuccessfully = fallbackCopyToClipboard(exportSnippet);
+
+        if (!copiedSuccessfully) {
+          throw new Error('Fallback clipboard copy failed.');
+        }
+      }
+
       setCopied(true);
-      announceCopyStatus(t('customize.export.copied'));
+
+      announceCopyStatus(
+        exportFormat === 'markdown'
+          ? t('customize.export.copy_status_markdown_success', {
+              defaultValue: 'Markdown snippet copied to clipboard.',
+            })
+          : exportFormat === 'html'
+            ? t('customize.export.copy_status_html_success', {
+                defaultValue: 'HTML snippet copied to clipboard.',
+              })
+            : exportFormat === 'tsx'
+              ? t('customize.export.copy_status_tsx_success', {
+                  defaultValue: 'React TSX snippet copied to clipboard.',
+                })
+              : t('customize.export.copy_status_action_success', {
+                  defaultValue: 'GitHub Action snippet copied to clipboard.',
+                })
+      );
 
       if (copyResetTimeoutRef.current !== null) {
         window.clearTimeout(copyResetTimeoutRef.current);
@@ -304,7 +344,12 @@ function CustomizePageInner(): ReactElement {
       }, 3000);
     } catch {
       setCopied(false);
-      announceCopyStatus(t('dashboard.share.failed'));
+
+      announceCopyStatus(
+        t('customize.export.copy_status_error', {
+          defaultValue: `Unable to copy the ${exportFormat === 'markdown' ? 'Markdown' : 'HTML'} snippet.`,
+        })
+      );
     }
   };
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
@@ -313,15 +358,15 @@ function CustomizePageInner(): ReactElement {
   };
 
   return (
-    <div className="min-h-screen bg-transparent text-zinc-900 dark:text-white font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-transparent text-white font-sans overflow-x-hidden">
       {/* Ambient background */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-[10%] -left-[10%] w-[35%] h-[35%] bg-emerald-500/5 dark:bg-emerald-500/8 blur-[120px] rounded-full" />
-        <div className="absolute top-[30%] -right-[10%] w-[25%] h-[25%] bg-purple-500/5 dark:bg-purple-500/8 blur-[120px] rounded-full" />
-        <div className="absolute bottom-0 left-1/2 w-[30%] h-[30%] bg-blue-500/3 dark:bg-blue-500/5 blur-[120px] rounded-full" />
+        <div className="absolute -top-[10%] -left-[10%] w-[35%] h-[35%] bg-emerald-500/8 blur-[120px] rounded-full" />
+        <div className="absolute top-[30%] -right-[10%] w-[25%] h-[25%] bg-purple-500/8 blur-[120px] rounded-full" />
+        <div className="absolute bottom-0 left-1/2 w-[30%] h-[30%] bg-blue-500/5 blur-[120px] rounded-full" />
       </div>
 
-      <div className="relative z-10 max-w-[1400px] mx-auto px-6 py-8">
+      <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         {/* ── Top Bar ───────────────────────────────────────────────────────── */}
         <motion.div
           initial={{ opacity: 0, y: -10 }}
@@ -332,7 +377,7 @@ function CustomizePageInner(): ReactElement {
           <Link
             href="/"
             id="back-to-home-link"
-            className="inline-flex items-center gap-2 text-sm text-zinc-500 dark:text-white/40 hover:text-zinc-900 dark:hover:text-white transition-colors group"
+            className="inline-flex items-center gap-2 text-sm text-gray-500 hover:text-black dark:text-white/55 dark:hover:text-white transition-colors group"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -350,7 +395,7 @@ function CustomizePageInner(): ReactElement {
             {t('customize.back_to_home')}
           </Link>
 
-          <div className="h-4 w-px bg-black/10 dark:bg-white/10" />
+          <div className="h-4 w-px bg-white/10" />
 
           <div>
             <span className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">
@@ -366,20 +411,20 @@ function CustomizePageInner(): ReactElement {
           transition={{ duration: 0.5, delay: 0.05 }}
           className="mb-10"
         >
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-zinc-900 dark:text-white leading-tight mb-2">
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight text-black dark:text-white leading-tight mb-2">
             {t('customize.title')}
           </h1>
-          <p className="text-zinc-500 dark:text-gray-405 text-sm max-w-xl">{t('customize.desc')}</p>
+          <p className="text-gray-600 dark:text-white/65 text-sm max-w-xl">{t('customize.desc')}</p>
         </motion.div>
 
         {/* ── Split layout ─────────────────────────────────────────────────── */}
-        <div className="grid lg:grid-cols-[380px_1fr] xl:grid-cols-[380px_1fr_380px] gap-6 items-start">
+        <div className="grid lg:grid-cols-[380px_1fr] xl:grid-cols-[340px_1fr_340px] gap-6 items-start">
           {/* ════ LEFT: Control Panel ════════════════════════════════════════ */}
           <motion.aside
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.1 }}
-            className="bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/5 rounded-[1.75rem] p-6 flex flex-col gap-6 sticky top-6 shadow-sm"
+            className="bg-white/70 backdrop-blur-xl border border-black/10 dark:bg-black/35 dark:border-white/10 rounded-[1.75rem] p-6 flex flex-col gap-6 sticky top-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] min-w-0"
           >
             <ControlsPanel
               username={username}
@@ -417,10 +462,10 @@ function CustomizePageInner(): ReactElement {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.15 }}
-            className="flex flex-col gap-6"
+            className="flex flex-col gap-6 min-w-0"
           >
             {/* Live Preview */}
-            <div className="bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/5 rounded-[1.75rem] p-6 shadow-sm">
+            <div className="bg-white/70 backdrop-blur-xl border border-black/10 dark:bg-black/35 dark:border-white/10 rounded-[1.75rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
               <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400 mb-5">
                 {t('customize.live_preview')}
               </p>
@@ -451,7 +496,7 @@ function CustomizePageInner(): ReactElement {
                 {/* Glow ring */}
                 <div className="absolute -inset-px bg-gradient-to-br from-emerald-500/20 to-purple-500/20 rounded-[1.5rem] opacity-0 group-hover:opacity-100 transition-opacity duration-700 blur-lg pointer-events-none" />
 
-                <InteractiveViewer className="relative bg-zinc-50 dark:bg-[#050505] border border-black/10 dark:border-white/8 rounded-[1.25rem] flex items-center justify-center p-6 min-h-[280px]">
+                <InteractiveViewer className="relative bg-white/60 backdrop-blur-md border border-black/10 dark:bg-black/40 dark:border-white/10 rounded-[1.25rem] flex items-center justify-center p-6 min-h-[280px]">
                   {/* Scanning line effect behind image */}
                   <div className="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/3 to-transparent animate-[pulse_3s_ease-in-out_infinite] pointer-events-none" />
 
@@ -540,10 +585,10 @@ function CustomizePageInner(): ReactElement {
                           <path d="m5 12 7-7 7 7" />
                         </svg>
                       </div>
-                      <p className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white">
+                      <p className="text-lg font-semibold tracking-tight text-black dark:text-white">
                         {t('landing.preview_placeholder_title')}
                       </p>
-                      <p className="mt-2 max-w-md text-sm leading-relaxed text-zinc-500 dark:text-white/45">
+                      <p className="mt-2 max-w-md text-sm leading-relaxed text-gray-500 dark:text-white/65">
                         {t('customize.empty_preview_desc')}
                       </p>
                     </div>
@@ -551,7 +596,7 @@ function CustomizePageInner(): ReactElement {
                 </InteractiveViewer>
               </div>
 
-              <p className="mt-3 text-[11px] text-zinc-400 dark:text-white/20 text-center">
+              <p className="mt-3 text-[11px] text-gray-500 dark:text-white/55 text-center">
                 {hasUsername
                   ? isRandomTheme
                     ? t('landing.preview_auto_theme')
@@ -572,8 +617,8 @@ function CustomizePageInner(): ReactElement {
             />
 
             {/* URL breakdown */}
-            <div className="bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/5 rounded-[1.75rem] p-6 shadow-sm">
-              <p className="text-xs font-bold uppercase tracking-[0.22em] text-zinc-500 dark:text-white/30 mb-4">
+            <div className="bg-white/70 backdrop-blur-xl border border-black/10 dark:bg-black/35 dark:border-white/10 rounded-[1.75rem] p-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)]">
+              <p className="text-xs font-bold uppercase tracking-[0.22em] text-gray-500 dark:text-white/55 mb-4">
                 {t('customize.active_params')}
               </p>
               <div className="flex flex-wrap gap-2">
@@ -583,13 +628,11 @@ function CustomizePageInner(): ReactElement {
                     return (
                       <span
                         key={k}
-                        className="inline-flex items-center gap-1.5 bg-zinc-50 dark:bg-white/4 border border-black/10 dark:border-white/8 rounded-lg px-3 py-1.5 text-xs font-mono"
+                        className="inline-flex items-center gap-1.5 bg-gray-100/80 backdrop-blur-md border border-black/10 dark:bg-white/[0.03] dark:border-white/10 rounded-lg px-3 py-1.5 text-xs font-mono break-all"
                       >
-                        <span className="text-purple-600 dark:text-purple-400">
-                          {decodeURIComponent(k)}
-                        </span>
-                        <span className="text-zinc-400 dark:text-white/20">=</span>
-                        <span className="text-emerald-600 dark:text-emerald-400">
+                        <span className="text-purple-400 break-all">{decodeURIComponent(k)}</span>
+                        <span className="text-gray-400 dark:text-white/55 shrink-0">=</span>
+                        <span className="text-emerald-600 dark:text-emerald-400 break-all">
                           {decodeURIComponent(v)}
                         </span>
                       </span>
@@ -605,7 +648,7 @@ function CustomizePageInner(): ReactElement {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
-            className="bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/5 rounded-[1.75rem] p-6 flex flex-col gap-6 sticky top-6 shadow-sm xl:col-start-3"
+            className="bg-white/70 backdrop-blur-xl border border-black/10 dark:bg-black/35 dark:border-white/10 rounded-[1.75rem] p-6 flex flex-col gap-6 sticky top-6 shadow-[0_20px_60px_rgba(0,0,0,0.35)] xl:col-start-3 min-w-0"
           >
             <AdvancedSettingsPanel
               hideTitle={hideTitle}

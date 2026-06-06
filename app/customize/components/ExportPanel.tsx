@@ -8,6 +8,7 @@ import { useTranslation } from '@/context/TranslationContext';
 const EXPORT_FORMATS: { value: ExportFormat; labelKey: string }[] = [
   { value: 'markdown', labelKey: 'markdown' },
   { value: 'html', labelKey: 'html' },
+  { value: 'tsx', labelKey: 'tsx' },
   { value: 'action', labelKey: 'action' },
 ];
 
@@ -31,6 +32,38 @@ export function ExportPanel({
   onCopy: () => void | Promise<void>;
 }): ReactElement {
   const { t } = useTranslation();
+  const activeSnippet = hasUsername ? snippet : getPlaceholderSnippet(format);
+
+  const formatLabel =
+    format === 'markdown'
+      ? t('customize.export.markdown')
+      : format === 'action'
+        ? t('customize.export.action')
+        : format === 'tsx'
+          ? t('customize.export.tsx')
+          : t('customize.export.html');
+
+  const copyButtonLabel = hasUsername
+    ? format === 'action'
+      ? t('customize.export.copy_aria_action_enabled', {
+          defaultValue: 'Copy GitHub Action workflow to clipboard',
+        })
+      : format === 'tsx'
+        ? t('customize.export.copy_aria_tsx_enabled', {
+            defaultValue: 'Copy React TSX component to clipboard',
+          })
+        : t('customize.export.copy_aria_enabled', { format: formatLabel })
+    : format === 'action'
+      ? t('customize.export.copy_aria_action_disabled', {
+          defaultValue: 'Add a GitHub username to enable copying the GitHub Action workflow',
+        })
+      : format === 'tsx'
+        ? t('customize.export.copy_aria_tsx_disabled', {
+            defaultValue: 'Add a GitHub username to enable copying the React TSX component',
+          })
+        : t('customize.export.copy_aria_disabled', { format: formatLabel });
+
+  // Track async server download states
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownloadBadge = async () => {
@@ -39,6 +72,7 @@ export function ExportPanel({
     try {
       setIsDownloading(true);
 
+      // 1. Extract the API URL source string from the template snippet container
       const urlMatch = snippet.match(/\((https?:\/\/[^)]+)\)/) || snippet.match(/src="([^"]+)"/);
       let targetUrl = urlMatch ? urlMatch[1] : '';
 
@@ -47,23 +81,30 @@ export function ExportPanel({
         return;
       }
 
+      // 2. Clear out HTML character entities if grabbed from HTML embed strings
       targetUrl = targetUrl.replace(/&amp;/g, '&');
 
+      // 3. SECURE LOCAL WORKSPACE TESTING: Redirect backend calls to your local server instance
       if (targetUrl.includes('https://commitpulse.vercel.app')) {
         targetUrl = targetUrl.replace('https://commitpulse.vercel.app', window.location.origin);
       }
 
+      // 4. Append a cache-busting refresh query parameter to guarantee the latest custom colors
       if (targetUrl.includes('?')) {
         targetUrl += '&refresh=true';
       } else {
         targetUrl += '?refresh=true';
       }
 
+      // 5. Fetch the real, server-side generated raw XML text of the SVG from your local server
       const response = await fetch(targetUrl);
       if (!response.ok) throw new Error('Network response failed to retrieve badge data stream.');
 
       let svgText = await response.text();
 
+      // 6. ABSOLUTE VIEWPORT CENTERING INJECTION
+      // We attach absolute positioning properties directly into the root vector stylesheet.
+      // This forces the standalone browser view to scale up and lock dead center in the viewport grid!
       const standaloneStyles = `
         <style id="standalone-canvas-centering">
           svg {
@@ -73,69 +114,51 @@ export function ExportPanel({
             top: 0 !important; bottom: 0 !important;
             left: 0 !important; right: 0 !important;
             max-width: 90vw !important;
-            max-height: 85vh !important;
-            width: 100% !important;
-            height: 100% !important;
-          }
-          html, body {
-            background-color: #0d1117 !important;
-            margin: 0 !important;
-            padding: 0 !important;
-            overflow: hidden !important;
+            max-height: 90vh !important;
           }
         </style>
       `;
 
-      svgText = svgText.replace(/<svg[^>]*>/, (match) => `${match}${standaloneStyles}`);
+      const closingSvgTag = '</svg>';
+      const injectionIndex = svgText.lastIndexOf(closingSvgTag);
 
+      if (injectionIndex !== -1) {
+        svgText =
+          svgText.substring(0, injectionIndex) +
+          standaloneStyles +
+          svgText.substring(injectionIndex);
+      }
+
+      // 7. Initialize standard file downloader
       const blob = new Blob([svgText], { type: 'image/svg+xml;charset=utf-8' });
+      const blobUrl = URL.createObjectURL(blob);
 
-      const downloadUrl = URL.createObjectURL(blob);
-      const downloadLink = document.createElement('a');
-      downloadLink.href = downloadUrl;
-      downloadLink.download = `commitpulse-${username || 'badge'}.svg`;
-      document.body.appendChild(downloadLink);
-      downloadLink.click();
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.href = blobUrl;
+      downloadAnchor.download = `${username || 'commitpulse'}-badge.svg`;
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
 
-      document.body.removeChild(downloadLink);
-      URL.revokeObjectURL(downloadUrl);
-      toast.success(t('dashboard.share.svg_downloaded'));
-    } catch (error) {
-      console.error('Failed to download custom vector badge image asset:', error);
-      toast.error(t('dashboard.share.failed'));
-    } finally {
+      // 8. Cleanup memory references
+      document.body.removeChild(downloadAnchor);
+      URL.revokeObjectURL(blobUrl);
+
       setIsDownloading(false);
+      toast.success('Badge vector asset saved successfully!');
+    } catch (err) {
+      setIsDownloading(false);
+      console.error(err);
+      toast.error('Failed to retrieve the latest badge asset. Please try again.');
     }
   };
 
-  const activeSnippet = hasUsername ? snippet : getPlaceholderSnippet(format);
-  const formatLabel =
-    format === 'markdown'
-      ? t('customize.export.markdown')
-      : format === 'action'
-        ? t('customize.export.action')
-        : t('customize.export.html');
-  const copyButtonLabel = hasUsername
-    ? format === 'action'
-      ? 'Copy GitHub Action workflow to clipboard'
-      : t('customize.export.copy_aria_enabled', { format: formatLabel })
-    : t('customize.export.copy_aria_disabled', { format: formatLabel });
-
   return (
-    <div className="bg-white dark:bg-[#0a0a0a] border border-black/10 dark:border-white/5 rounded-[1.75rem] p-6 shadow-sm">
-      <div className="flex flex-col gap-4 mb-5 md:flex-row md:items-center md:justify-between">
-        <div>
-          <p className="text-xs font-bold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">
-            {t('customize.export.snippet_title')} ({formatLabel})
-          </p>
-          <p className="mt-1 text-[11px] text-zinc-500 dark:text-white/25">
-            {t('customize.export.snippet_desc')}
-          </p>
-        </div>
-
-        <div className="flex flex-wrap items-center gap-3">
+    <div className="flex flex-col gap-4">
+      {/* Code Block Header Control Deck */}
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-3">
           <div
-            className="inline-flex rounded-xl border border-black/10 dark:border-white/10 bg-zinc-50 dark:bg-black p-1"
+            className="flex flex-wrap sm:flex-nowrap rounded-xl border border-black/10 bg-white/60 backdrop-blur-md dark:border-white/10 dark:bg-white/[0.03] p-1"
             aria-label="Export format"
           >
             {EXPORT_FORMATS.map((option) => (
@@ -214,10 +237,10 @@ export function ExportPanel({
             aria-describedby="export-copy-status"
             className={`relative inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all duration-200 ${
               !hasUsername
-                ? 'bg-zinc-100 dark:bg-white/[0.04] border border-black/10 dark:border-white/8 text-zinc-400 dark:text-white/30'
+                ? 'bg-gray-200/90 border border-black/10 text-gray-500 cursor-not-allowed dark:bg-white/10 dark:border-white/10 dark:text-white/35'
                 : copied
-                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                  : 'bg-zinc-900 text-white dark:bg-white dark:text-black hover:scale-[1.03] active:scale-[0.97] shadow-sm'
+                  ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                  : 'bg-gray-200/90 border border-black/10 text-gray-800 hover:bg-gray-300/80 hover:scale-[1.03] active:scale-[0.97] dark:bg-white dark:text-black'
             }`}
           >
             {copied ? (
@@ -254,7 +277,7 @@ export function ExportPanel({
                   <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
                 </svg>
                 {format === 'action'
-                  ? t('customize.export.copy_workflow', { defaultValue: 'Copy workflow' })
+                  ? t('customize.export.copy_workflow')
                   : t('customize.export.copy_format', { format: formatLabel })}
               </>
             )}
@@ -272,13 +295,13 @@ export function ExportPanel({
         {copyStatusMessage}
       </p>
 
-      <div className="bg-zinc-950 border border-black/10 dark:border-white/8 rounded-xl px-5 py-4 overflow-x-auto">
-        <code className="text-emerald-400 dark:text-emerald-300 text-xs font-mono leading-relaxed break-all whitespace-pre-wrap">
+      <div className="bg-gray-100/80 backdrop-blur-md border border-black/10 dark:bg-white/[0.03] dark:border-white/10 rounded-xl px-5 py-4 overflow-x-auto">
+        <code className="text-emerald-600 dark:text-emerald-300 text-xs font-mono leading-relaxed break-all whitespace-pre-wrap">
           {activeSnippet}
         </code>
       </div>
 
-      <div className="mt-4 text-[11px] text-zinc-500 dark:text-white/20 leading-relaxed space-y-3">
+      <div className="mt-4 text-[11px] text-gray-500 dark:text-white/60 leading-relaxed space-y-3">
         {format === 'action' ? (
           <>
             <p>
@@ -322,8 +345,54 @@ export function ExportPanel({
               </button>
             </div>
           </>
+        ) : format === 'tsx' ? (
+          <>
+            <p>
+              <strong>Step 1:</strong> Save the component code above as a file, e.g.{' '}
+              <code className="text-gray-700 dark:text-white/75">CommitPulse.tsx</code> in your
+              React project.
+            </p>
+            <p>
+              <strong>Step 2:</strong> Import and render the component natively in your JSX/TSX
+              layout:
+            </p>
+            <div className="mt-2 bg-gray-100/80 dark:bg-white/[0.03] border border-black/10 dark:border-white/10 rounded-lg px-3 py-2 flex items-center justify-between group">
+              <code className="text-emerald-600 dark:text-emerald-300 font-mono select-all">
+                {`<CommitPulse username="${username || 'your-github-username'}" theme="dark" />`}
+              </code>
+              <button
+                type="button"
+                onClick={() => {
+                  navigator.clipboard.writeText(
+                    `<CommitPulse username="${username || 'your-github-username'}" theme="dark" />`
+                  );
+                }}
+                className="text-gray-400 hover:text-emerald-500 transition-colors"
+                title="Copy usage snippet"
+                aria-label="Copy component usage snippet"
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  className="h-3.5 w-3.5"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              </button>
+            </div>
+          </>
         ) : (
-          <p>{t('customize.export.footer_tip')}</p>
+          <p>
+            Paste this into your GitHub profile&apos;s{' '}
+            <code className="text-gray-700 dark:text-white/75">README.md</code>.{' '}
+            {t('customize.export.footer_tip')}
+          </p>
         )}
       </div>
     </div>

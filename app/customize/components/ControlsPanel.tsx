@@ -60,7 +60,7 @@ function HexInput({
         </label>
 
         <div className="relative flex-1 flex items-center">
-          <span className="absolute left-3 text-black/30 dark:text-white/30 text-sm select-none pointer-events-none">
+          <span className="absolute left-3 text-gray-400 dark:text-white/55 text-sm select-none pointer-events-none">
             #
           </span>
           <input
@@ -70,7 +70,7 @@ function HexInput({
             onChange={(e) => onChange(e.target.value.replace(/^#/, ''))}
             placeholder={placeholder.replace(/^#/, '')}
             maxLength={6}
-            className="w-full bg-white dark:bg-black border border-black/10 dark:border-white/10 rounded-xl pl-7 pr-4 py-2.5 text-sm font-mono text-emerald-600 dark:text-emerald-300 placeholder:text-black/30 dark:placeholder:text-white/20 outline-none focus:border-emerald-500/50 transition-colors"
+            className="w-full min-w-0 bg-gray-100/80 backdrop-blur-md border border-black/10 dark:bg-white/[0.03] dark:border-white/10 rounded-xl pl-7 pr-4 py-2.5 text-sm font-mono text-black dark:text-emerald-300 placeholder:text-gray-400 dark:placeholder:text-white/60 outline-none focus:border-emerald-500/50 transition-colors"
           />
         </div>
       </div>
@@ -148,7 +148,7 @@ export function ControlsPanel({
             value={username}
             onChange={(e) => onUsernameChange(e.target.value)}
             placeholder={t('customize.controls.username_placeholder')}
-            className="w-full bg-white/60 backdrop-blur-md border border-black/10 dark:bg-black/40 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-black dark:text-emerald-300 placeholder:text-gray-400 dark:placeholder:text-white/60 outline-none focus:border-emerald-500/50 transition-all duration-300"
+            className="w-full min-w-0 bg-white/60 backdrop-blur-md border border-black/10 dark:bg-black/40 dark:border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-black dark:text-emerald-300 placeholder:text-gray-400 dark:placeholder:text-white/60 outline-none focus:border-emerald-500/50 transition-all duration-300"
           />
         </ControlRow>
 
@@ -158,7 +158,7 @@ export function ControlsPanel({
         <ControlRow label={t('customize.controls.sync_year')}>
           <div className="relative">
             <StyledSelect id="year-select" value={year} onChange={(value) => onYearChange(value)}>
-              <option value="">{currentYear}</option>
+              <option value="">{currentYear} (current)</option>
 
               {Array.from({ length: currentYear - 2019 }, (_, i) => {
                 const yearOption = currentYear - i - 1;
@@ -179,9 +179,9 @@ export function ControlsPanel({
           <SectionLabel>{t('customize.controls.color_overrides')}</SectionLabel>
           {disablesCustomColors ? (
             <div className="mt-2 flex flex-col gap-2">
-              <p className="text-[11px] text-zinc-500 dark:text-white/30 leading-relaxed">
+              <p className="text-[11px] text-gray-500 dark:text-white/60 leading-relaxed">
                 Custom colors are disabled for the{' '}
-                <strong className="text-zinc-700 dark:text-white/50">
+                <strong className="text-gray-700 dark:text-white/50">
                   {isAutoTheme ? 'Auto' : 'Random'}
                 </strong>{' '}
                 theme.{' '}
@@ -190,16 +190,16 @@ export function ControlsPanel({
                   : 'The badge chooses a different preset palette for each request.'}
               </p>
               {isRandomTheme && (
-                <p className="rounded-lg border border-amber-400/20 dark:border-amber-400/15 bg-amber-400/5 px-3 py-2 text-[11px] leading-relaxed text-amber-700 dark:text-amber-200/70">
+                <p className="rounded-lg border border-amber-400/15 bg-amber-400/5 px-3 py-2 text-[11px] leading-relaxed text-amber-200/70">
                   Random changes on every page load and disables caching for the badge URL.
                 </p>
               )}
             </div>
           ) : (
             <>
-              <p className="text-[11px] text-zinc-500 dark:text-white/25 mb-3 leading-relaxed">
+              <p className="text-[11px] text-gray-500 dark:text-white/60 mb-3 leading-relaxed">
                 These override the theme preset above. Enter HEX values without&nbsp;
-                <code className="text-zinc-600 dark:text-white/40">#</code>.
+                <code className="text-gray-700 dark:text-white/65">#</code>.
               </p>
               <div className="flex flex-col gap-3">
                 <HexInput
@@ -228,7 +228,7 @@ export function ControlsPanel({
                 <button
                   id="clear-overrides-btn"
                   onClick={onClearOverrides}
-                  className="mt-3 text-[11px] text-red-500/70 hover:text-red-500 transition-colors"
+                  className="mt-3 text-[11px] text-red-400/60 hover:text-red-400 transition-colors"
                 >
                   {t('customize.controls.clear_custom')}
                 </button>
@@ -246,17 +246,17 @@ export function ControlsPanel({
                 key={currentScale}
                 id={`scale-${currentScale}-btn`}
                 onClick={() => onScaleChange(currentScale)}
-                className={`py-2.5 rounded-xl text-sm font-bold transition-all ${
+                className={`py-2.5 rounded-xl text-sm font-bold transition-all min-w-0 break-words px-1 ${
                   scale === currentScale
-                    ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
-                    : 'bg-white dark:bg-black border border-black/10 dark:border-white/8 text-zinc-400 dark:text-white/30 hover:text-zinc-700 dark:hover:text-white/60 hover:border-black/20 dark:hover:border-white/20'
+                    ? 'bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                    : 'bg-gray-100/80 backdrop-blur-md border border-black/10 text-gray-700 dark:bg-white/[0.03] dark:border-white/8 dark:text-white/60 hover:bg-gray-200/70 hover:text-black hover:border-black/20 dark:hover:text-white/70 dark:hover:border-white/20'
                 }`}
               >
                 {currentScale === 'linear' ? 'Linear' : 'Logarithmic'}
               </button>
             ))}
           </div>
-          <p className="text-[11px] text-zinc-500 dark:text-white/25 mt-1.5 leading-relaxed">
+          <p className="text-[11px] text-gray-600 dark:text-white/60 mt-1.5 leading-relaxed">
             {scale === 'log'
               ? 'Log mode compresses extreme outliers. Great for power committers.'
               : 'Linear mode shows raw commit counts as tower heights.'}
@@ -303,14 +303,14 @@ export function ControlsPanel({
               value={font}
               onChange={(e) => onFontChange(e.target.value as Font)}
               placeholder={t('customize.controls.custom_font_placeholder')}
-              className="w-full bg-gray-100/80 backdrop-blur-md border border-black/10 dark:bg-white/[0.03] dark:bg-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-black dark:text-emerald-300 placeholder:text-gray-400 dark:placeholder:text-white/60 outline-none focus:border-emerald-500/50 transition-colors mt-2"
+              className="w-full min-w-0 bg-gray-100/80 backdrop-blur-md border border-black/10 dark:bg-white/[0.03] dark:border-white/10 rounded-xl px-4 py-2.5 text-sm font-mono text-black dark:text-emerald-300 placeholder:text-gray-400 dark:placeholder:text-white/60 outline-none focus:border-emerald-500/50 transition-colors mt-2"
             />
           )}
         </ControlRow>
 
         <ControlRow label={t('customize.controls.radius')}>
           <div className="relative flex items-center">
-            <div className="absolute inset-x-0 h-0.75 rounded-full bg-black/10 dark:bg-white/6" />
+            <div className="absolute inset-x-0 h-1 rounded-full bg-gray-300 dark:bg-white/6" />
             <input
               type="range"
               min="0"
@@ -321,9 +321,9 @@ export function ControlsPanel({
               className="w-full relative bg-transparent appearance-none outline-none slider"
             />
           </div>
-          <div className="flex justify-between text-sm text-zinc-400 dark:text-white/20">
+          <div className="flex justify-between text-sm text-gray-500 dark:text-white/55 ">
             <span>0</span>
-            <span className="text-emerald-600 dark:text-emerald-300/65 font-mono text-[11px]">
+            <span className="text-emerald-600 dark:text-emerald-300/60 font-mono text-[11px]">
               {radius}
             </span>
             <span>50</span>
