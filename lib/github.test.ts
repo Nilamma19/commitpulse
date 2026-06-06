@@ -292,6 +292,29 @@ describe('fetchGitHubContributions', () => {
       Authorization: 'bearer actions-token',
     });
   });
+  it('verifies Authorization header uses GITHUB_TOKEN value in fallback path', async () => {
+    delete process.env.GITHUB_PAT;
+    process.env.GITHUB_TOKEN = 'my-actions-token';
+    vi.mocked(fetch).mockResolvedValue(
+      mockResponse({
+        data: {
+          user: {
+            contributionsCollection: {
+              contributionCalendar: mockCalendar,
+              commitContributionsByRepository: [],
+            },
+          },
+        },
+      })
+    );
+
+    await fetchGitHubContributions('octocat');
+
+    const [, options] = vi.mocked(fetch).mock.calls[0];
+    expect(options?.headers).toMatchObject({
+      Authorization: 'bearer my-actions-token',
+    });
+  });
 
   it('throws before fetching when no GitHub token is configured', async () => {
     delete process.env.GITHUB_PAT;
@@ -406,8 +429,9 @@ describe('fetchGitHubContributions', () => {
         );
 
       const promise = fetchGitHubContributions('octocat');
+      void promise;
+
       await vi.advanceTimersByTimeAsync(500);
-      const { calendar: result } = await promise;
 
       expect(fetch).toHaveBeenCalledTimes(2);
     });

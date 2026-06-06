@@ -781,6 +781,42 @@ describe('calculateStreak', () => {
     expect(resultLeapGap.currentStreak).toBe(1);
     expect(resultLeapGap.longestStreak).toBe(2);
   });
+  it('verify streak formulas for leap year transition timeline (Variation 2)', () => {
+    const buildCustomCalendar = (
+      daysData: { date: string; count: number }[]
+    ): ContributionCalendar => {
+      const weeks = [];
+
+      for (let i = 0; i < daysData.length; i += 7) {
+        const slice = daysData.slice(i, i + 7);
+
+        weeks.push({
+          contributionDays: slice.map((day) => ({
+            contributionCount: day.count,
+            date: day.date,
+          })),
+        });
+      }
+
+      return {
+        totalContributions: daysData.reduce((sum, d) => sum + d.count, 0),
+        weeks,
+      };
+    };
+
+    const calendar = buildCustomCalendar([
+      { date: '2024-02-27', count: 1 },
+      { date: '2024-02-28', count: 1 },
+      { date: '2024-02-29', count: 1 },
+      { date: '2024-03-01', count: 1 },
+    ]);
+
+    const result = calculateStreak(calendar, 'UTC', new Date('2024-03-01T12:00:00Z'));
+
+    expect(result.currentStreak).toBe(4);
+    expect(result.longestStreak).toBe(4);
+    expect(result.totalContributions).toBe(4);
+  });
 
   it('correctly calculates current and longest streaks when commits are made exclusively on Saturdays and Sundays', () => {
     // 2024-01-01 is a Monday.
@@ -2253,6 +2289,30 @@ describe('calculateWrappedStats', () => {
 
     // 4. Assert highestDailyCount === 0
     expect(result.highestDailyCount).toBe(0);
+  });
+  it('does not return NaN when total contributions are zero', () => {
+    const calendar = {
+      totalContributions: 0,
+      weeks: [
+        {
+          contributionDays: [
+            { date: '2024-06-01', contributionCount: 0 },
+            { date: '2024-06-02', contributionCount: 0 },
+          ],
+        },
+      ],
+    };
+
+    const result = calculateWrappedStats(calendar);
+
+    expect(result.weekendRatio).toBe(0);
+    expect(Number.isNaN(result.weekendRatio)).toBe(false);
+  });
+  it('handles undefined contribution days safely', () => {
+    const result = aggregateCalendars([{ totalContributions: 0, weeks: [] }]);
+
+    expect(result.totalContributions).toBe(0);
+    expect(result.weeks).toEqual([]);
   });
 
   // ISSUE OBJECTIVE: Verify weekendRatio is 100 when all commits are on weekends
