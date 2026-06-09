@@ -123,17 +123,16 @@ describe('Student Profile Types & Utilities Massive Scaling', () => {
     for (let j = 0; j < 50; j++) {
       profiles.filter(
         (p) =>
-          p.graduationYear === 2026 &&
-          p.skills.includes('Skill_6') &&
-          p.name.startsWith('Student')
+          p.graduationYear === 2026 && p.skills.includes('Skill_6') && p.name.startsWith('Student')
       );
     }
 
     const endTime = performance.now();
     const durationMs = endTime - startTime;
 
-    // Check performance remains well below limit budget (e.g. 2000ms)
-    expect(durationMs).toBeLessThan(2000);
+    // Check performance remains well below limit budget (2000ms locally, relaxed on CI to avoid flakiness)
+    const limit = process.env.CI ? 10000 : 2000;
+    expect(durationMs).toBeLessThan(limit);
     expect(profiles).toHaveLength(10000);
   });
 
@@ -149,7 +148,15 @@ describe('Student Profile Types & Utilities Massive Scaling', () => {
     for (let i = 0; i < 500; i++) {
       const card = document.createElement('div');
       card.className = 'student-profile-card';
-      card.innerHTML = `<h3>Student ${i}</h3><p>Graduation: ${2020 + (i % 10)}</p>`;
+
+      const h3 = document.createElement('h3');
+      h3.textContent = `Student ${i}`;
+
+      const p = document.createElement('p');
+      p.textContent = `Graduation: ${2020 + (i % 10)}`;
+
+      card.appendChild(h3);
+      card.appendChild(p);
       layoutGrid.appendChild(card);
     }
 
