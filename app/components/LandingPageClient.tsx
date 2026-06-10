@@ -485,12 +485,14 @@ export default function LandingPageClient() {
   const selectDemoUser = (name: string) => {
     setUsername(name);
     setInstantUsername(name);
+    setBadgeResult(null);
   };
 
   const handleGenerate = (e: React.FormEvent) => {
     e.preventDefault();
     if (trimmedUsername.length > 0) {
       setInstantUsername(trimmedUsername);
+      setBadgeResult(null);
       trackUser(trimmedUsername);
       addSearch(trimmedUsername);
     }
@@ -597,6 +599,7 @@ export default function LandingPageClient() {
                       }
                       setUsername(val);
                       setInstantUsername('');
+                      setBadgeResult(null);
                     }}
                     maxLength={39}
                   />
@@ -804,19 +807,27 @@ export default function LandingPageClient() {
             <div className="relative flex flex-col min-h-[480px] md:min-h-[520px] items-center justify-center overflow-hidden rounded-3xl border border-black/5 bg-white/50 p-8 backdrop-blur-xl shadow-2xl dark:border-white/10 dark:bg-[#0a0a0a]/80">
               {hasUsername ? (
                 <div className="w-full flex flex-col items-center justify-center gap-4">
-                  {userDetailsError === 'User not found' ? (
+                  {userDetailsError ? (
                     <div className="flex flex-col items-center justify-center gap-4 py-12 text-center">
                       <div className="flex h-16 w-16 items-center justify-center rounded-3xl border border-red-500/20 bg-red-500/10 shadow-inner">
                         <X size={32} className="text-red-500" />
                       </div>
                       <div>
                         <p className="text-lg font-bold text-gray-900 dark:text-white tracking-tight">
-                          {t('landing.user_not_found', { defaultValue: 'GitHub user not found' })}
+                          {userDetailsError === 'User not found'
+                            ? t('landing.user_not_found', { defaultValue: 'GitHub user not found' })
+                            : t('landing.verification_failed', {
+                                defaultValue: 'Verification failed',
+                              })}
                         </p>
                         <p className="text-sm text-gray-500 dark:text-white/65 mt-1">
-                          {t('landing.user_not_found_desc', {
-                            defaultValue: 'Please check the username and try again.',
-                          })}
+                          {userDetailsError === 'User not found'
+                            ? t('landing.user_not_found_desc', {
+                                defaultValue: 'Please check the username and try again.',
+                              })
+                            : `${t('landing.verification_failed', {
+                                defaultValue: 'Verification failed',
+                              })}: ${userDetailsError}`}
                         </p>
                       </div>
                     </div>
