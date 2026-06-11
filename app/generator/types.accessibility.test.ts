@@ -161,6 +161,9 @@ const mockInitialState: GeneratorState = {
   githubUsername: 'johndoe',
   showCommitPulse: true,
   commitPulseAccent: 'emerald',
+  showSnakeGraph: false,
+  showPacmanGraph: false,
+  graphPlacement: 'bottom',
 };
 
 describe('GeneratorTypes Accessibility & Screen Reader Compliance (Variation 4)', () => {
