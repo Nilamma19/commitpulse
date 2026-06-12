@@ -1498,6 +1498,47 @@ describe('calculateStreak — timezone awareness', () => {
     expect(istResult.todayDate).toBe('2024-06-15');
     expect(jstResult.todayDate).toBe('2024-06-15');
   });
+
+  it('credits contribution at exactly local midnight to the correct day (Issue #5258)', () => {
+    const calendar = {
+      totalContributions: 1,
+      weeks: [
+        {
+          contributionDays: [
+            { contributionCount: 0, date: '2026-06-10' },
+            { contributionCount: 1, date: '2026-06-11' },
+            { contributionCount: 0, date: '2026-06-12' },
+          ],
+        },
+      ],
+    };
+    // 2026-06-11T00:00:00.000+05:30 is 2026-06-10T18:30:00.000Z
+    const nowInKolkataMidnight = new Date('2026-06-10T18:30:00.000Z');
+    const result = calculateStreak(calendar, 'Asia/Kolkata', nowInKolkataMidnight);
+    expect(result.todayDate).toBe('2026-06-11');
+    expect(result.currentStreak).toBe(1);
+  });
+
+  it('keeps streak active during the current day before any contributions are made (Issue #5260)', () => {
+    const calendar = {
+      totalContributions: 2,
+      weeks: [
+        {
+          contributionDays: [
+            { contributionCount: 1, date: '2026-06-10' },
+            { contributionCount: 1, date: '2026-06-11' },
+            { contributionCount: 0, date: '2026-06-12' },
+          ],
+        },
+      ],
+    };
+    // At 09:00 AM local time on 2026-06-12, the user has not committed yet today.
+    // The streak should still be 2.
+    const now = new Date('2026-06-12T09:00:00.000Z');
+    const result = calculateStreak(calendar, 'UTC', now, 0); // grace = 0
+    expect(result.todayDate).toBe('2026-06-12');
+    expect(result.currentStreak).toBe(2);
+  });
 });
 
 describe('isStreakAlive', () => {
