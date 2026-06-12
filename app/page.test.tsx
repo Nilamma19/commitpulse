@@ -190,7 +190,6 @@ describe('LandingPage', () => {
 
     expect(dismissButton).toBeInTheDocument();
 
-
     fireEvent.click(dismissButton);
 
     expect(dismissHandler).toHaveBeenCalled();
@@ -218,6 +217,5 @@ describe('LandingPage', () => {
     await waitFor(() => {
       expect(global.fetch).toHaveBeenCalled();
     });
-
   });
 });

@@ -108,6 +108,4 @@ it('renders with empty data without crashing', () => {
 
 it('labels aggregated bars with a date range rather than a single day', () => {
   render(<ActivityLandscape data={mockData} />);
-
-
 });
