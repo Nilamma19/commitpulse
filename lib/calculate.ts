@@ -1,11 +1,5 @@
 // lib/calculate.ts
-import type {
-  ContributionCalendar,
-  ContributionDay,
-  ContributionWeek,
-  StreakStats,
-  MonthlyStats,
-} from '../types';
+import type { ContributionCalendar, ContributionDay, StreakStats, MonthlyStats } from '../types';
 
 /* ==========================================================================
  * STREAK & CALENDAR CALCULATIONS
@@ -275,12 +269,38 @@ export function aggregateCalendars(calendars: ContributionCalendar[]): Contribut
 
   missingDays.sort((a, b) => a.date.localeCompare(b.date));
   for (const day of missingDays) {
-    aggregatedBase.weeks.unshift({
+    aggregatedBase.weeks.push({
       contributionDays: [day],
     });
   }
   return aggregatedBase;
 }
+
+/**
+ * Chunks a flat, date-ordered list of contribution days into weekday-aligned weeks,
+ * starting a new week on each Sunday. This mirrors GitHub's calendar layout so the
+ * renderers keep their week (column) and weekday (row) grid instead of collapsing
+ * every day into a single week.
+ */
+export function chunkDaysIntoWeeks(days: ContributionDay[]): ContributionCalendar['weeks'] {
+  const weeks: ContributionCalendar['weeks'] = [];
+  let currentWeek: ContributionDay[] = [];
+
+  for (const day of days) {
+    if (currentWeek.length > 0 && new Date(day.date).getUTCDay() === 0) {
+      weeks.push({ contributionDays: currentWeek });
+      currentWeek = [];
+    }
+    currentWeek.push(day);
+  }
+
+  if (currentWeek.length > 0) {
+    weeks.push({ contributionDays: currentWeek });
+  }
+
+  return weeks;
+}
+
 /**
  * Processes a calendar to generate deep insights for "GitHub Wrapped"
  */
@@ -288,7 +308,7 @@ export function calculateWrappedStats(calendar: ContributionCalendar) {
   const weeks = calendar?.weeks || [];
   const days = weeks.flatMap((w) => w?.contributionDays || []);
 
-  let mostActiveDay = { date: '', count: 0 };
+  let mostActiveDay = { date: 'N/A', count: 0 };
   const monthCounts: Record<string, number> = {};
   let weekendCommits = 0;
   let weekdayCommits = 0;
@@ -324,6 +344,9 @@ export function calculateWrappedStats(calendar: ContributionCalendar) {
     mostActiveDate: mostActiveDay.date,
     highestDailyCount: mostActiveDay.count,
     busiestMonth: busiestMonthStr,
-    weekendRatio: Math.round((weekendCommits / (weekendCommits + weekdayCommits || 1)) * 100),
+    weekendRatio: (() => {
+      const total = weekendCommits + weekdayCommits;
+      return total > 0 ? Math.round((weekendCommits / total) * 100) : 0;
+    })(),
   };
 }
