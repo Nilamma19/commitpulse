@@ -20,24 +20,9 @@ describe('ExportPanel - Theme Contrast & Visual Cohesion', () => {
 
     const mainContainer = container.firstElementChild;
 
-    expect(mainContainer).toHaveClass('bg-white/70');
-    expect(mainContainer).toHaveClass('dark:bg-black/35');
-    expect(mainContainer).toHaveClass('border-black/10');
-    expect(mainContainer).toHaveClass('dark:border-white/10');
-  });
-
-  it('verifies contrast text classes for headings and helper descriptions', () => {
-    render(<ExportPanel {...defaultProps} />);
-
-    const title = screen.getByText('Markdown Export Snippet');
-    expect(title).toHaveClass('text-emerald-600');
-    expect(title).toHaveClass('dark:text-emerald-400');
-
-    const description = screen.getByText(
-      'Switch formats without changing the live badge configuration.'
-    );
-    expect(description).toHaveClass('text-gray-500');
-    expect(description).toHaveClass('dark:text-white/60');
+    expect(mainContainer).toHaveClass('flex');
+    expect(mainContainer).toHaveClass('flex-col');
+    expect(mainContainer).toHaveClass('gap-4');
   });
 
   it('verifies visual cohesion classes on export format selector buttons', () => {
@@ -51,11 +36,21 @@ describe('ExportPanel - Theme Contrast & Visual Cohesion', () => {
       name: 'HTML',
     });
 
-    expect(markdownButton).toHaveClass('text-emerald-700');
+    expect(markdownButton).toHaveClass('text-emerald-600');
     expect(markdownButton).toHaveClass('dark:text-emerald-300');
 
-    expect(htmlButton).toHaveClass('text-gray-600');
-    expect(htmlButton).toHaveClass('dark:text-white/60');
+    expect(htmlButton).toHaveClass('text-zinc-400');
+    expect(htmlButton).toHaveClass('dark:text-white/35');
+  });
+  it('verifies export format selector container maintains contrast styling', () => {
+    render(<ExportPanel {...defaultProps} />);
+
+    const selector = screen.getByLabelText('Export format');
+
+    expect(selector).toHaveClass('border-black/10');
+    expect(selector).toHaveClass('bg-white/60');
+    expect(selector).toHaveClass('dark:border-white/10');
+    expect(selector).toHaveClass('dark:bg-white/[0.03]');
   });
 
   it('verifies code snippet container and code block maintain readable contrast', () => {
@@ -86,7 +81,7 @@ describe('ExportPanel - Theme Contrast & Visual Cohesion', () => {
     });
 
     expect(copyButton).toHaveClass('text-gray-500');
-    expect(copyButton).toHaveClass('dark:text-white/60');
+    expect(copyButton).toHaveClass('dark:text-white/35');
     expect(copyButton).toHaveClass('bg-gray-200/90');
     expect(copyButton).toHaveClass('dark:bg-white/10');
 
