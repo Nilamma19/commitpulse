@@ -5,6 +5,7 @@ import { GET } from '../route';
 vi.mock('../../../../lib/github', () => ({
   fetchGitHubContributions: vi.fn(),
   getOrgDashboardData: vi.fn(),
+  getCircuitTelemetry: vi.fn().mockReturnValue({ isOpen: false, resetInMs: 0 }),
 }));
 
 vi.mock('../../../../utils/time', () => ({
@@ -12,7 +13,7 @@ vi.mock('../../../../utils/time', () => ({
   getSecondsUntilMidnightInTimezone: vi.fn(),
 }));
 
-import { fetchGitHubContributions } from '../../../../lib/github';
+import { fetchGitHubContributions, getCircuitTelemetry } from '../../../../lib/github';
 import { getSecondsUntilUTCMidnight } from '../../../../utils/time';
 import type { ExtendedContributionData } from '../../../../types';
 import { refreshPolicy } from '../../../../services/github/refresh-policy';
