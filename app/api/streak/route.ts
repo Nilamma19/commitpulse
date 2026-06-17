@@ -34,6 +34,24 @@ import { refreshPolicy } from '@/services/github/refresh-policy';
 import { refreshRateLimiter } from '@/services/github/refresh-rate-limiter';
 import { logger } from '@/lib/logger';
 
+const VALIDATION_CACHE_MAX = 256;
+const validationCache = new Map<string, ReturnType<typeof streakParamsSchema.safeParse>>();
+
+function cachedValidation(
+  key: string,
+  parseFn: () => ReturnType<typeof streakParamsSchema.safeParse>
+) {
+  let cached = validationCache.get(key);
+  if (cached !== undefined) return cached;
+  cached = parseFn();
+  if (validationCache.size >= VALIDATION_CACHE_MAX) {
+    const firstKey = validationCache.keys().next().value;
+    if (firstKey !== undefined) validationCache.delete(firstKey);
+  }
+  validationCache.set(key, cached);
+  return cached;
+}
+
 const SVG_CSP_HEADER =
   "default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; connect-src https://fonts.gstatic.com;";
 
@@ -67,7 +85,10 @@ function getMonthlyReferenceDate(year: string | undefined, timezone: string): Da
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  const parseResult = streakParamsSchema.safeParse(Object.fromEntries(searchParams.entries()));
+  const cacheKey = searchParams.toString();
+  const parseResult = cachedValidation(cacheKey, () =>
+    streakParamsSchema.safeParse(Object.fromEntries(searchParams.entries()))
+  );
   try {
     if (!parseResult.success) {
       const fieldErrors = parseResult.error.flatten();
@@ -547,8 +568,8 @@ export async function GET(request: Request) {
     const cacheControl = isRefreshRequested
       ? 'no-cache, no-store, must-revalidate'
       : isHistoricalYear
-        ? 'public, s-maxage=31536000, immutable'
-        : `public, s-maxage=${secondsToMidnight}, stale-while-revalidate=86400`;
+        ? 'public, max-age=31536000, s-maxage=31536000, immutable'
+        : `public, max-age=14400, s-maxage=${secondsToMidnight}, stale-while-revalidate=7200`;
 
     const etag = crypto.createHash('sha256').update(svg).digest('hex');
     const weakEtag = `W/"${etag}"`;
@@ -567,9 +588,30 @@ export async function GET(request: Request) {
       }
     }
 
+    if (format === 'png') {
+      const { Resvg } = await import('@resvg/resvg-js');
+      const resvg = new Resvg(svg, {
+        background: 'transparent',
+        fitTo: { mode: 'original' },
+      });
+      const pngBuffer = resvg.render().asPng();
+
+      return new NextResponse(new Uint8Array(pngBuffer), {
+        headers: {
+          'Content-Type': 'image/png',
+          'Cache-Control': cacheControl,
+          'X-CommitPulse-Grace-Applied': String(grace),
+          ETag: weakEtag,
+          'X-Cache-Status': shouldBypassCache
+            ? `BYPASS, fetched=${new Date().toISOString()}`
+            : 'HIT',
+        },
+      });
+    }
+
     return new NextResponse(svg, {
       headers: {
-        'Content-Type': 'image/svg+xml',
+        'Content-Type': 'image/svg+xml; charset=utf-8',
         'Cache-Control': cacheControl,
         'Content-Security-Policy': SVG_CSP_HEADER,
         'X-CommitPulse-Grace-Applied': String(grace),
@@ -584,8 +626,19 @@ export async function GET(request: Request) {
 
 type ParseResult = ReturnType<typeof streakParamsSchema.safeParse>;
 
+function sanitizeErrorMessage(message: string): string {
+  if (message.includes('ZodError') || message.includes('zod')) {
+    return 'Invalid request parameters';
+  }
+  if (message.includes('schema') || message.includes('Schema')) {
+    return 'Invalid request parameters';
+  }
+  return message;
+}
+
 function buildErrorResponse(error: unknown, parseResult: ParseResult): NextResponse {
-  const message = error instanceof Error ? error.message : String(error);
+  const rawMessage = error instanceof Error ? error.message : String(error);
+  const message = sanitizeErrorMessage(rawMessage);
 
   if (parseResult.success && parseResult.data.format === 'json') {
     const isNotFound =
@@ -660,7 +713,7 @@ function buildErrorResponse(error: unknown, parseResult: ParseResult): NextRespo
     const svg = generateRateLimitSVG(errBg, errAccent, errText, errRadius, errSpeed, isCircuitOpen);
 
     const headers: Record<string, string> = {
-      'Content-Type': 'image/svg+xml',
+      'Content-Type': 'image/svg+xml; charset=utf-8',
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       'Content-Security-Policy': SVG_CSP_HEADER,
     };
@@ -687,7 +740,7 @@ function buildErrorResponse(error: unknown, parseResult: ParseResult): NextRespo
     return new NextResponse(svg, {
       status: 404,
       headers: {
-        'Content-Type': 'image/svg+xml',
+        'Content-Type': 'image/svg+xml; charset=utf-8',
         'Cache-Control': 'no-cache',
         'Content-Security-Policy': SVG_CSP_HEADER,
       },
@@ -701,7 +754,7 @@ function buildErrorResponse(error: unknown, parseResult: ParseResult): NextRespo
     return new NextResponse(validationSvg, {
       status: 400,
       headers: {
-        'Content-Type': 'image/svg+xml',
+        'Content-Type': 'image/svg+xml; charset=utf-8',
         'Cache-Control': 'no-store',
         'Content-Security-Policy': SVG_CSP_HEADER,
       },
@@ -719,7 +772,7 @@ function buildErrorResponse(error: unknown, parseResult: ParseResult): NextRespo
   return new NextResponse(errorSvg, {
     status: 500,
     headers: {
-      'Content-Type': 'image/svg+xml',
+      'Content-Type': 'image/svg+xml; charset=utf-8',
       'Cache-Control': 'no-store',
       'Content-Security-Policy': SVG_CSP_HEADER,
     },
