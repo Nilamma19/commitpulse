@@ -34,7 +34,7 @@ export default function ReturnToTop() {
     const updateVisibility = () => {
       const scrolled = window.scrollY + window.innerHeight;
       const total = document.documentElement.scrollHeight;
-      setIsVisible(window.scrollY > 100);
+      setIsVisible(window.scrollY > 300);
       setAtBottom(scrolled >= total - 40);
     };
     updateVisibility();
