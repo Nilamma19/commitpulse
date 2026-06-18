@@ -611,7 +611,7 @@ export async function GET(request: Request) {
     return new NextResponse(svg, {
       headers: {
         'Content-Type': 'image/svg+xml; charset=utf-8',
-        'Cache-Control': cacheControl,
+        'Cache-Control': 'public, max-age=60, s-maxage=60, stale-while-revalidate=30',
         'Content-Security-Policy': SVG_CSP_HEADER,
         'X-CommitPulse-Grace-Applied': String(grace),
         ETag: weakEtag,
