@@ -2740,12 +2740,14 @@ describe('normalizeCalendarToTimezone', () => {
       ],
     };
 
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     const normalized = normalizeCalendarToTimezone(calendar, 'UTC');
     expect(normalized.totalContributions).toBe(20);
     // Count total contributions across all days
     const totalContributions = normalized.weeks.reduce(
-      (sum, week) =>
-        sum + week.contributionDays.reduce((daySum, day) => daySum + day.contributionCount, 0),
+      (sum: any, week: any) =>
+        sum +
+        week.contributionDays.reduce((daySum: any, day: any) => daySum + day.contributionCount, 0),
       0
     );
     expect(totalContributions).toBe(20);
@@ -2765,8 +2767,8 @@ describe('normalizeCalendarToTimezone', () => {
     };
 
     const normalized = normalizeCalendarToTimezone(calendar, 'America/New_York');
-    const allDays = normalized.weeks.flatMap((w) => w.contributionDays);
-    const dates = allDays.map((d) => d.date);
+    const allDays = normalized.weeks.flatMap((w: any) => w.contributionDays);
+    const dates = allDays.map((d: any) => d.date);
 
     expect(dates).toContain('2024-01-01');
     expect(dates).toContain('2024-01-02');
@@ -2784,7 +2786,7 @@ describe('normalizeCalendarToTimezone', () => {
     };
 
     const normalized = normalizeCalendarToTimezone(calendar, 'Asia/Tokyo');
-    const allDays = normalized.weeks.flatMap((w) => w.contributionDays);
+    const allDays = normalized.weeks.flatMap((w: any) => w.contributionDays);
 
     expect(allDays[0].date).toBe('2024-03-15');
     expect(allDays[0].contributionCount).toBe(5);
@@ -2804,7 +2806,7 @@ describe('normalizeCalendarToTimezone', () => {
     };
 
     const normalized = normalizeCalendarToTimezone(calendar, 'America/Los_Angeles');
-    const allDays = normalized.weeks.flatMap((w) => w.contributionDays);
+    const allDays = normalized.weeks.flatMap((w: any) => w.contributionDays);
 
     expect(allDays).toHaveLength(1);
     expect(allDays[0].date).toBe('2024-06-10');
