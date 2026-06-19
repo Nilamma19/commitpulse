@@ -216,9 +216,6 @@ export default function AdvancedColorPicker({
   const contrastBlack = getContrastRatio(value, '#000000');
   const whiteRating = getContrastRating(contrastWhite);
   const blackRating = getContrastRating(contrastBlack);
-  const bestBg = contrastWhite >= contrastBlack ? 'white' : 'black';
-  const bestRating = bestBg === 'white' ? whiteRating : blackRating;
-
   const accessibleColor = whiteRating.level !== 'pass' ? findAccessibleColor(value, 'white') : null;
 
   const rgb = hexToRgb(value) || { r: 0, g: 0, b: 0 };

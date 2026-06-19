@@ -70,12 +70,12 @@ describe('rgbToHsl', () => {
   });
 
   it('converts black to hsl with 0 lightness', () => {
-    const { h, s, l } = rgbToHsl(0, 0, 0);
+    const { l } = rgbToHsl(0, 0, 0);
     expect(l).toBe(0);
   });
 
   it('converts white to hsl with 100 lightness', () => {
-    const { h, s, l } = rgbToHsl(255, 255, 255);
+    const { s, l } = rgbToHsl(255, 255, 255);
     expect(l).toBe(100);
     expect(s).toBe(0);
   });
@@ -83,7 +83,7 @@ describe('rgbToHsl', () => {
 
 describe('hexToHsl', () => {
   it('converts a hex color to HSL', () => {
-    const { h, s, l } = hexToHsl('#10b981');
+    const { s, l } = hexToHsl('#10b981');
     expect(s).toBeGreaterThan(60);
     expect(l).toBeGreaterThan(35);
   });
