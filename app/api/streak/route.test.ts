@@ -1089,12 +1089,17 @@ describe('GET /api/streak', () => {
   });
 
   describe('monthly view parameter', () => {
-    it('returns 200 when view=monthly is given', async () => {
+    it('returns a valid monthly SVG response when view=monthly is given', async () => {
       const response = await GET(makeRequest({ user: 'octocat', view: 'monthly' }));
 
       expect(response.status).toBe(200);
+      expect(response.headers.get('Content-Type')).toBe('image/svg+xml; charset=utf-8');
+
       const body = await response.text();
-      expect(body).toContain('Commits This Month');
+
+      expect(body).toContain('<svg');
+      expect(body).toMatch(/commits this month/i);
+      expect(body).not.toContain('@keyframes grow-up');
     });
 
     it('automatically overrides or widens the query bounds to encompass the start of the previous month when view=monthly is requested with custom from/to params', async () => {
