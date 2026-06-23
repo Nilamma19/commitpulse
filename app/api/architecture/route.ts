@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { execFile } from 'child_process';
 import { promisify } from 'util';
 import fs from 'fs';
+import { readdir, stat } from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import * as ts from 'typescript';
@@ -331,8 +332,8 @@ export async function POST(req: NextRequest) {
     const filesList: string[] = [];
     const allFilesSet = new Set<string>();
 
-    function traverseDir(currentDir: string) {
-      const entries = fs.readdirSync(currentDir, { withFileTypes: true });
+    async function traverseDir(currentDir: string) {
+      const entries = await readdir(currentDir, { withFileTypes: true });
 
       for (const entry of entries) {
         const fullPath = path.join(currentDir, entry.name);
@@ -341,7 +342,7 @@ export async function POST(req: NextRequest) {
         if (entry.isDirectory()) {
           if (IGNORED_DIRS.has(entry.name)) continue;
           folders.push(relativePath);
-          traverseDir(fullPath);
+          await traverseDir(fullPath);
         } else if (entry.isFile()) {
           const ext = path.extname(entry.name).toLowerCase();
           if (TEXT_EXTENSIONS.has(ext)) {
@@ -352,7 +353,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    traverseDir(tempDir);
+    await traverseDir(tempDir);
 
     // Limit files to analyze to prevent resource starvation or serverless timeouts
     const MAX_FILES_TO_ANALYZE = 150;
@@ -361,17 +362,24 @@ export async function POST(req: NextRequest) {
     );
 
     // Prioritize shallower file structures first, then sort by size
-    const prioritizedFiles = parsableFiles
-      .map((file) => {
+    const fileMetadata = await Promise.all(
+      parsableFiles.map(async (file) => {
         const fullPath = path.join(tempDir, file);
-        const stats = fs.statSync(fullPath);
+        const fileStat = await stat(fullPath);
         const depth = file.split('/').length;
-        return { file, depth, size: stats.size };
+
+        return {
+          file,
+          depth,
+          size: fileStat.size,
+        };
       })
+    );
+
+    const prioritizedFiles = fileMetadata
       .sort((a, b) => a.depth - b.depth || b.size - a.size)
       .slice(0, MAX_FILES_TO_ANALYZE)
       .map((item) => item.file);
-
     const prioritizedFilesSet = new Set(prioritizedFiles);
 
     // Analyze each file (Git history & AST parsing)
@@ -383,7 +391,7 @@ export async function POST(req: NextRequest) {
           const fullPath = path.join(tempDir, file);
           const ext = path.extname(file).toLowerCase();
           const fileContent = fs.readFileSync(fullPath, 'utf-8');
-          const stats = fs.statSync(fullPath);
+          const fileStat = await stat(fullPath);
           const lines = fileContent.split('\n').length;
 
           // Parse Imports & Exports
@@ -431,7 +439,7 @@ export async function POST(req: NextRequest) {
             path: file,
             name: path.basename(file),
             type: ext.slice(1),
-            size: stats.size,
+            size: fileStat.size,
             linesOfCode: lines,
             commits: commitsCount,
             lastModified,
