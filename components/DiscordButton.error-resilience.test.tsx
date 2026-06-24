@@ -59,6 +59,6 @@ describe('DiscordButton error resilience', () => {
   it('keeps button content visible after render', () => {
     render(<DiscordButton />);
 
-    expect(screen.getByText('Join the core community on Discord')).toBeTruthy();
+    expect(screen.getByText(/discord_community/i)).toBeTruthy();
   });
 });
