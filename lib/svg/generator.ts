@@ -158,17 +158,17 @@ function generateParticles(
     const fillAttr = autoTheme ? 'class="cp-accent-fill"' : `fill="${color}"`;
 
     particles += `
-       <circle ${fillAttr} cx="${x + offsetX}" cy="${y - height}" r="${1.5 * sf}" opacity="1" pointer-events="none">
-       ${
-         animate
-           ? `
-         <animate attributeName="cy" from="${y - height}" to="${y - height - Math.round(20 * sf)}" dur="1.5s" begin="${delay}s" repeatCount="indefinite" />
-         <animate attributeName="opacity" from="1" to="0" dur="1.5s" begin="${delay}s" repeatCount="indefinite" />
-       `
-           : ''
-       }
-       </circle>
-     `;
+        <circle ${fillAttr} cx="${x + offsetX}" cy="${y - height}" r="${1.5 * sf}" opacity="1" pointer-events="none">
+        ${
+          animate
+            ? `
+          <animate attributeName="cy" from="${y - height}" to="${y - height - Math.round(20 * sf)}" dur="1.5s" begin="${delay}s" repeatCount="indefinite" />
+          <animate attributeName="opacity" from="1" to="0" dur="1.5s" begin="${delay}s" repeatCount="indefinite" />
+        `
+            : ''
+        }
+        </circle>
+      `;
   }
   return `<g class="heat-particles" pointer-events="none">${particles}</g>`;
 }
@@ -227,13 +227,13 @@ function generateCustomGradients(params: BadgeParams): { gradients: string; grad
 
       const colorHex = color.startsWith('#') ? color : `#${color}`;
       stopElements += `
-         <stop offset="${offset}%" stop-color="${colorHex}" stop-opacity="${stopOpacity}" />`;
+          <stop offset="${offset}%" stop-color="${colorHex}" stop-opacity="${stopOpacity}" />`;
     });
 
     gradients += `
-       <linearGradient id="${levelId}" x1="${coords.x1}" y1="${coords.y1}" x2="${coords.x2}" y2="${coords.y2}">
+        <linearGradient id="${levelId}" x1="${coords.x1}" y1="${coords.y1}" x2="${coords.x2}" y2="${coords.y2}">
 ${stopElements}
-       </linearGradient>`;
+        </linearGradient>`;
   }
 
   params.__customGradientId = gradientId;
@@ -256,10 +256,10 @@ function renderDefs(sf: number, params: BadgeParams): string {
         for (let i = 0; i < 4; i++) {
           const level = i + 1;
           gradients += `
-       <linearGradient id="tower-grad-level-${level}" x1="0" y1="1" x2="0" y2="0">
-         <stop offset="0%" stop-color="var(--cp-bg)" stop-opacity="0.1" />
-         <stop offset="100%" stop-color="var(--cp-accent)" stop-opacity="${0.4 + i * 0.2}" />
-       </linearGradient>`;
+        <linearGradient id="tower-grad-level-${level}" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="var(--cp-bg)" stop-opacity="0.1" />
+          <stop offset="100%" stop-color="var(--cp-accent)" stop-opacity="${0.4 + i * 0.2}" />
+        </linearGradient>`;
         }
       } else {
         const accent = params.accent;
@@ -276,10 +276,10 @@ function renderDefs(sf: number, params: BadgeParams): string {
         colors.forEach((c, idx) => {
           const level = idx + 1;
           gradients += `
-       <linearGradient id="tower-grad-level-${level}" x1="0" y1="1" x2="0" y2="0">
-         <stop offset="0%" stop-color="${bgHex}" stop-opacity="0.1" />
-         <stop offset="100%" stop-color="${c}" stop-opacity="${0.4 + idx * 0.2}" />
-       </linearGradient>`;
+        <linearGradient id="tower-grad-level-${level}" x1="0" y1="1" x2="0" y2="0">
+          <stop offset="0%" stop-color="${bgHex}" stop-opacity="0.1" />
+          <stop offset="100%" stop-color="${c}" stop-opacity="${0.4 + idx * 0.2}" />
+        </linearGradient>`;
         });
       }
     }
@@ -312,24 +312,24 @@ function renderDefs(sf: number, params: BadgeParams): string {
       const x2 = Math.round(50 + Math.cos(angleRad) * 50) + '%';
       const y2 = Math.round(50 + Math.sin(angleRad) * 50) + '%';
       canvasGradient = `
-       <linearGradient id="canvas-gradient" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">
-         <stop offset="0%" stop-color="${bgStart}" />
-         <stop offset="100%" stop-color="${bgEnd}" />
-       </linearGradient>`;
+        <linearGradient id="canvas-gradient" x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}">
+          <stop offset="0%" stop-color="${bgStart}" />
+          <stop offset="100%" stop-color="${bgEnd}" />
+        </linearGradient>`;
     } else {
       canvasGradient = `
-       <radialGradient id="canvas-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-         <stop offset="0%" stop-color="${bgStart}" />
-         <stop offset="100%" stop-color="${bgEnd}" />
-       </radialGradient>`;
+        <radialGradient id="canvas-gradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+          <stop offset="0%" stop-color="${bgStart}" />
+          <stop offset="100%" stop-color="${bgEnd}" />
+        </radialGradient>`;
     }
   }
 
   return `<defs>
-     ${filterGlow}
-     ${gradients}
-     ${canvasGradient}
-   </defs>`;
+      ${filterGlow}
+      ${gradients}
+      ${canvasGradient}
+    </defs>`;
 }
 
 function renderStatsSection(
@@ -2038,6 +2038,28 @@ function renderGhostTowers(
   return `<g class="ghost-towers">${ghostTowers}</g>`;
 }
 
+/**
+ * Renders the shared SVG definitions (filters and gradients)
+ * used by both NotFound and RateLimit ghost SVGs.
+ * * @param bg - The background color string to match the ghost fade gradient.
+ */
+export function renderGhostDefs(bg: string): string {
+  return `
+    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur stdDeviation="5" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="softglow" x="-80%" y="-80%" width="360%" height="360%">
+      <feGaussianBlur stdDeviation="8" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <linearGradient id="ghostFade" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="30%" stop-color="${bg}" stop-opacity="0"/>
+      <stop offset="100%" stop-color="${bg}" stop-opacity="1"/>
+    </linearGradient>
+  `;
+}
+
 export function generateNotFoundSVG(
   username: string,
   bg: string,
@@ -2065,18 +2087,7 @@ export function generateNotFoundSVG(
   <title id="cp-title-${safeId}">User not found — ${safeName}</title>
   <desc id="cp-desc-${safeId}">The GitHub user ${safeName} was not found or has no contribution data.</desc>
   <defs>
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="5" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-    <filter id="softglow" x="-80%" y="-80%" width="360%" height="360%">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-    <linearGradient id="ghostFade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="30%" stop-color="${bg}" stop-opacity="0"/>
-      <stop offset="100%" stop-color="${bg}" stop-opacity="1"/>
-    </linearGradient>
+    ${renderGhostDefs(bg)}
   </defs>
 
   <style>
@@ -3136,31 +3147,20 @@ export function generateRateLimitSVG(
   <title id="cp-title-${safeId}">Rate Limit Exceeded</title>
   <desc id="cp-desc-${safeId}">GitHub API rate limit exceeded. Please try again later.</desc>
   <defs>
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%">
-      <feGaussianBlur stdDeviation="5" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-    <filter id="softglow" x="-80%" y="-80%" width="360%" height="360%">
-      <feGaussianBlur stdDeviation="8" result="blur"/>
-      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
-    </filter>
-    <linearGradient id="ghostFade" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="30%" stop-color="${bg}" stop-opacity="0"/>
-      <stop offset="100%" stop-color="${bg}" stop-opacity="1"/>
-    </linearGradient>
+    ${renderGhostDefs(bg)}
   </defs>
 
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap');
-    .title  { font-family: "Syncopate", sans-serif; fill: ${text}; font-size: 18px; letter-spacing: 6px; font-weight: 400; opacity: 0.5; }
-    .label  { font-family: "Roboto", sans-serif; fill: ${accent}; font-size: 11px; letter-spacing: 2px; opacity: 0.4; }
-    .stats  { font-family: "Space Grotesk", sans-serif; fill: ${text}; font-size: 42px; font-weight: 500; opacity: 0.2; }
-    .ghost-pulse { animation: gp 2.6s ease-in-out infinite; }
-    @keyframes gp { 0%,100%{opacity:.55} 50%{opacity:1} }
-    @media (prefers-reduced-motion: reduce) {
-      .ghost-pulse { animation: none; }
-      .rate-limit-scan animate { display: none; }
-    }
+     @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&amp;family=Space+Grotesk:wght@400;500;600&amp;display=swap');
+     .title  { font-family: "Syncopate", sans-serif; fill: ${text}; font-size: 18px; letter-spacing: 6px; font-weight: 400; opacity: 0.5; }
+     .label  { font-family: "Roboto", sans-serif; fill: ${accent}; font-size: 11px; letter-spacing: 2px; opacity: 0.4; }
+     .stats  { font-family: "Space Grotesk", sans-serif; fill: ${text}; font-size: 42px; font-weight: 500; opacity: 0.2; }
+     .ghost-pulse { animation: gp 2.6s ease-in-out infinite; }
+     @keyframes gp { 0%,100%{opacity:.55} 50%{opacity:1} }
+     @media (prefers-reduced-motion: reduce) {
+       .ghost-pulse { animation: none; }
+       .rate-limit-scan animate { display: none; }
+     }
   </style>
 
   <rect width="${SVG_WIDTH}" height="${SVG_HEIGHT}" rx="${radius}" fill="${bg}"/>
@@ -3391,17 +3391,14 @@ export function generateActivityGraphSVG(
 >
   <title id="cp-title-${safeId}">Activity Graph for ${safeUser}</title>
   <desc id="cp-desc-${safeId}">Contribution activity graph for ${safeUser} over ${days} days, totalling ${totalCount} ${unit.toLowerCase()}.</desc>
-  &lt;!--_renderActivityGraphDefs(accent, bg, params)--&gt;
   <style>
   @import url('https://fonts.googleapis.com/css2?family=Syncopate:wght@400;700&amp;family=Space+Grotesk:wght@400;500;600;700&amp;display=swap');
   ${googleFontsImport}
-  &lt;!--_activityGraphCSS(selectedFont, statsFont, text, accent, false)--&gt;
   </style>
   <rect width="${width}" height="${height}" rx="${radius}" fill="${params.hideBackground ? 'transparent' : bgFill}" />
   <path class="ag-area" d="${areaPathD}" />
   <path class="ag-trend" d="${trendPathD}" stroke="${accent}" />
   <path class="ag-line" d="${pathD}" stroke="${accent}" />
-  &lt;!--_renderPeakAnnotation(peakX, peakY, peakCount, peakDate, accent, text, statsFont, false)--&gt;
   ${!params.hide_title ? `<text x="24" y="28" class="ag-title">${safeUser.toUpperCase()}${params.isOfflineFallback ? '<tspan fill="#ff9f43" font-size="10px" font-weight="bold"> [STALE CACHE]</tspan>' : ''}</text>` : ''}
   ${!params.hide_stats ? `<text x="${width - 24}" y="28" text-anchor="end" class="ag-total">${totalCount} ${unit}</text>` : ''}
 </svg>
@@ -3468,13 +3465,11 @@ function generateAutoThemeActivityGraphSVG(
   :root { --cp-bg: #${light.bg}; --cp-text: #${light.text}; --cp-accent: #${light.accent}; }
   @media (prefers-color-scheme: dark) { :root { --cp-bg: #${dark.bg}; --cp-text: #${dark.text}; --cp-accent: #${dark.accent}; } }
   .cp-bg-fill { fill: var(--cp-bg); }
-  &lt;!--_activityGraphCSS(selectedFont, statsFont, 'var(--cp-text)', 'var(--cp-accent)', true)--&gt;
   </style>
   <rect width="${width}" height="${height}" rx="${radius}" ${params.hideBackground ? 'fill="transparent"' : 'class="cp-bg-fill"'} />
   <path class="ag-area" d="${areaPathD}" />
   <path class="ag-trend" d="${trendPathD}" stroke="var(--cp-accent)" />
   <path class="ag-line" d="${pathD}" stroke="var(--cp-accent)" />
-  &lt;!--_renderPeakAnnotation(peakX, peakY, peakCount, peakDate, 'var(--cp-accent)', 'var(--cp-text)', statsFont, true)--&gt;
   ${!params.hide_title ? `<text x="24" y="28" class="ag-title">${safeUser.toUpperCase()}${params.isOfflineFallback ? '<tspan fill="#ff9f43" font-size="10px" font-weight="bold"> [STALE CACHE]</tspan>' : ''}</text>` : ''}
   ${!params.hide_stats ? `<text x="${width - 24}" y="28" text-anchor="end" class="ag-total">${totalCount} ${unit}</text>` : ''}
 </svg>
