@@ -90,4 +90,18 @@ describe('AIInsightsSkeleton Accessibility', () => {
     // TODO: When the loaded state (AIInsights) is implemented/rendered, ensure its headings
     // follow a logical order relative to the page container layout (e.g., an H3 tag).
   });
+
+  // 6. Reduced Motion Preference
+  // While JSDOM does not natively process CSS media queries, we assert that the component
+  // structure allows the global CSS (prefers-reduced-motion) to override the animation.
+  it('relies on the global .shimmer class to handle prefers-reduced-motion overrides', () => {
+    const { container } = render(<AIInsightsSkeleton />);
+
+    // Select an element that uses the shimmer animation
+    const shimmerElement = container.querySelector('.shimmer');
+    expect(shimmerElement).toBeInTheDocument();
+
+    // We document that standard `.shimmer` class is responsible for the fallback.
+    // CSS ensures that `.shimmer` sets `animation: none` on `prefers-reduced-motion: reduce`.
+  });
 });
