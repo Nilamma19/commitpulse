@@ -258,9 +258,12 @@ export function UnlockCelebration({
     };
 
     document.addEventListener('keydown', handleKeyDown);
-    dialogRef.current?.focus();
+    // Defer focus to the next frame so it runs after the dialog has mounted and
+    // painted (the dialog animates in), rather than during the same commit.
+    const focusFrame = requestAnimationFrame(() => dialogRef.current?.focus());
 
     return () => {
+      cancelAnimationFrame(focusFrame);
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = previousOverflow;
       previouslyFocused?.focus?.();

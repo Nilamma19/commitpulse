@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { UnlockCelebration } from './AchievementsClient';
 import type { AchievementData } from '@/types/achievements';
 
@@ -32,6 +32,13 @@ describe('UnlockCelebration accessibility', () => {
     fireEvent.keyDown(document.body, { key: 'Escape' });
 
     expect(onClose).toHaveBeenCalledTimes(1);
+  });
+
+  it('moves focus into the dialog when it opens', async () => {
+    render(<UnlockCelebration data={mockData} onClose={() => {}} />);
+
+    // Focus is deferred to the next animation frame, so wait for it.
+    await waitFor(() => expect(screen.getByRole('dialog')).toHaveFocus());
   });
 
   it('locks body scroll while open and restores it on close', () => {
