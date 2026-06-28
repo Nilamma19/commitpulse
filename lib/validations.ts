@@ -421,6 +421,26 @@ const baseStreakParamsSchema = z.object({
       },
       { message: 'Invalid "to" date format. Use ISO 8601 (e.g. 2023-12-31).' }
     ),
+  start_date: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        return validateStrictISODate(val);
+      },
+      { message: 'Invalid "start_date" format. Use ISO 8601 (e.g. 2023-01-01).' }
+    ),
+  end_date: z
+    .string()
+    .optional()
+    .refine(
+      (val) => {
+        if (!val) return true;
+        return validateStrictISODate(val);
+      },
+      { message: 'Invalid "end_date" format. Use ISO 8601 (e.g. 2023-12-31).' }
+    ),
   date: z
     .string()
     .optional()
