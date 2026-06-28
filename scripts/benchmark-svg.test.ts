@@ -145,4 +145,52 @@ describe('scripts/benchmark-svg', () => {
     );
     expect(separatorCalls).toHaveLength(3);
   });
+
+  it('respects --iterations=N parameter', async () => {
+    const originalArgv = [...process.argv];
+    process.argv = [...originalArgv, '--iterations=5'];
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const { performance } = await import('perf_hooks');
+    const { generateSVG } = await import('../lib/svg/generator');
+
+    let tick = 0;
+    vi.mocked(performance.now).mockImplementation(() => {
+      tick += 1;
+      return tick;
+    });
+
+    try {
+      await runBenchmarkScript();
+      // warmup (1) + iterations (5) = 6 calls per theme
+      // 3 themes * 6 = 18 calls total
+      expect(generateSVG).toHaveBeenCalledTimes(18);
+    } finally {
+      process.argv = originalArgv;
+    }
+  });
+
+  it('falls back to 20 iterations for invalid --iterations values', async () => {
+    const originalArgv = [...process.argv];
+    process.argv = [...originalArgv, '--iterations=-10'];
+
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const { performance } = await import('perf_hooks');
+    const { generateSVG } = await import('../lib/svg/generator');
+
+    let tick = 0;
+    vi.mocked(performance.now).mockImplementation(() => {
+      tick += 1;
+      return tick;
+    });
+
+    try {
+      await runBenchmarkScript();
+      // warmup (1) + default iterations (20) = 21 calls per theme
+      // 3 themes * 21 = 63 calls total
+      expect(generateSVG).toHaveBeenCalledTimes(63);
+    } finally {
+      process.argv = originalArgv;
+    }
+  });
 });
